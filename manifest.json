@@ -1,14 +1,17 @@
 {
-    "manifest_version": 3,
-    "name": "YouTube Auto Next",
-    "version": "1.0",
-    "permissions": ["scripting", "tabs"],
-    "host_permissions": ["http://localhost:5000/*"],
-    "background": {
-      "service_worker": "background.js"
-    },
-    "content_scripts": [{
+  "manifest_version": 3,
+  "name": "YouTube Auto Next",
+  "version": "1.0",
+  "permissions": ["scripting", "tabs", "webNavigation"],
+  "host_permissions": ["http://*/*"],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
       "matches": ["*://*.youtube.com/*"],
-      "js": ["content.js"]
-    }]
-  }
+      "js": ["content.js"],
+      "run_at": "document_idle"
+    }
+  ]
+}
