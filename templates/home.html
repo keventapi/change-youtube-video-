@@ -1,16 +1,62 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
+    <title>Recomendações do YouTube</title>
 </head>
 <body>
     <form action="/get_video" method="POST">
-        <input type="text" name="url" id="youtube_url">
+        <input type="text" name="url" id="youtube_url" placeholder="Cole a URL do vídeo aqui">
         <input type="submit" value="Enviar">
+        {% if dado.recomendations %}
+        <h3>Recomendações:</h3>
+        <div id="recomendacoes"></div>
+        {% else %}
+            <p>Nenhuma recomendação encontrada</p>
+        {% endif %}
     </form>
+
+    
+
+    <script>
+        const ip = '192.168.5.102'
+        var conteudo = {}
+        setInterval(get_reccomendations, 5000)
+        function get_reccomendations(){
+            fetch(`http://${ip}:5000/get_reccomendetions`).then(data => data.json()).then(response => {
+                console.log(JSON.stringify(conteudo) == JSON.stringify(response.recomendations))
+                if(JSON.stringify(conteudo) != JSON.stringify(response.recomendations)){
+                    let div = document.getElementById('recomendacoes')
+                    while(div.firstChild){
+                        div.removeChild(div.firstChild)
+                    }
+                    
+                }
+
+                if(JSON.stringify(response.recomendations) != JSON.stringify({}) && JSON.stringify(conteudo) != JSON.stringify(response.recomendations)){
+                    conteudo = response.recomendations
+                    for(let key in conteudo){
+                        let p = document.createElement('p')
+                        let img = document.createElement('img')
+                        img.src = conteudo[key]['thumb']
+                        let button = document.createElement('input')
+                        button.value = key
+                        button.type = 'submit'
+                        button.onclick = function(){
+                            input = document.getElementById('youtube_url')
+                            input.value = conteudo[key]['url']
+                        }
+                        div = document.getElementById('recomendacoes')
+                        p.appendChild(img)
+                        p.appendChild(button)
+                        div.append(p)
+                    }
+
+                    
+                }
+            })
+    }
+    </script>
 </body>
 </html>
-
