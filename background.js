@@ -17,9 +17,6 @@ setInterval(() => {
                 } else {
                   console.log('ok, enviando');
                   fetch(`http://${your_ipv4_ip}:5000/changed`);
-
-                  // Depois de redirecionar, enviar mensagem para pegar as recomendações
-                  // Espere o content.js coletar as recomendações antes de enviar
                   setTimeout(() => {
                     chrome.tabs.sendMessage(tab.id, {
                       action: "collect_recommendations"
@@ -29,9 +26,9 @@ setInterval(() => {
                       } else {
                         data_json = {}
                         for (let i = 0; i < response.data.length; i++){
-                          data_json[`video${i+1}`] = response.data[i]['url']
+                          data_json[response.data[i]['titulo']] = {"url": response.data[i]['link'], "thumb": response.data[i]['thumb']}
                         }
-                        fetch('http://192.168.5.102:5000/reccomendations', {method: "POST",
+                        fetch(`http://${your_ipv4_ip}:5000/reccomendations`, {method: "POST",
                           headers: {
                             "Content-Type": "application/json"
                           },
@@ -40,7 +37,7 @@ setInterval(() => {
                         console.log("Recomendações recebidas do content script:", data_json);
                       }
                     });
-                  }, 4000); // Espera 4 segundos para garantir que as recomendações foram carregadas
+                  }, 4000);
                 }
               });
             } else {
@@ -63,10 +60,9 @@ function onload_get_reccomendation(){
               console.log(response.data)
               data_json = {}
               for (let i = 0; i < response.data.length; i++){
-                data_json[response.data[i]['titulo']] = {url: response.data[i]['url'], thumb: ''}
-                console.log(data_json)
+                data_json[response.data[i]['titulo']] = {"url": response.data[i]['link'], "thumb": response.data[i]['thumb']}
               }
-              fetch('http://192.168.5.102:5000/reccomendations', {method: "POST",
+              fetch(`http://${your_ipv4_ip}:5000/reccomendations`, {method: "POST",
                 headers: {
                 "Content-Type": "application/json"},
                 body: JSON.stringify(data_json)

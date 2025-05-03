@@ -40,8 +40,7 @@ def changed():
 def reccomendations():
     global data
     ytreccomendations = request.get_json()
-    for keys in ytreccomendations.keys():
-        ytreccomendations[keys]['thumb'] = get_videos_info.get_thumb(ytreccomendations[keys]['url'])
+    print(ytreccomendations)
     data['recomendations'] = ytreccomendations
     print(data)
     return render_template('home.html', dado=data)
