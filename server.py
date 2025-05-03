@@ -1,6 +1,5 @@
 from flask import Flask, request, render_template, jsonify
 from flask_cors import CORS
-import get_videos_info
 
 app = Flask(__name__)
 CORS(app)
