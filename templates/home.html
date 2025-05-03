@@ -6,7 +6,7 @@
     <title>Recomendações do YouTube</title>
 </head>
 <body>
-    <form action="/get_video" method="POST">
+    <form action="/get_video" method="POST" id="form">
         <input type="text" name="url" id="youtube_url" placeholder="Cole a URL do vídeo aqui">
         <input type="submit" value="Enviar">
         {% if dado.recomendations %}
@@ -22,7 +22,7 @@
     <script>
         const ip = '192.168.5.102'
         var conteudo = {}
-        setInterval(get_reccomendations, 5000)
+        setInterval(get_reccomendations, 1500)
         function get_reccomendations(){
             fetch(`http://${ip}:5000/get_reccomendetions`).then(data => data.json()).then(response => {
                 console.log(JSON.stringify(conteudo) == JSON.stringify(response.recomendations))
@@ -42,15 +42,20 @@
                         img.src = conteudo[key]['thumb']
                         let button = document.createElement('input')
                         button.value = key
-                        button.type = 'submit'
-                        button.onclick = function(){
-                            input = document.getElementById('youtube_url')
-                            input.value = conteudo[key]['url']
-                        }
+                        button.type = 'button'
+                        button.addEventListener('click', () =>{
+                            let url = conteudo[key]['url']
+                            let input = document.getElementById('youtube_url')
+                            input.value = url
+                            let form = document.getElementById('form')
+                            console.log(url)
+                            form.submit()
+                        })
                         div = document.getElementById('recomendacoes')
                         p.appendChild(img)
                         p.appendChild(button)
                         div.append(p)
+                        console.log(conteudo[key])
                     }
 
                     
