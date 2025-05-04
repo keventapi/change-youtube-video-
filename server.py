@@ -6,7 +6,7 @@ CORS(app)
 
 data = {
     'url': None,
-    'funtion': 'change_video',
+    'function': 'change_video',
     'executar_algo': False,
     'recomendations': {}
 }
@@ -40,7 +40,8 @@ def reccomendations():
     global data
     ytreccomendations = request.get_json()
     print(ytreccomendations)
-    data['recomendations'] = ytreccomendations
+    if ytreccomendations != {}:
+        data['recomendations'] = ytreccomendations
     print(data)
     return render_template('home.html', dado=data)
 

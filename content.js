@@ -71,7 +71,20 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
       sendResponse({ status: "ok", data: recommendetions });
     }, 2000);
-
     return true;
   }
+
+  if(message.action == "pausar"){
+    video = document.querySelector('video')
+    if(video.paused){
+      video.play()
+    }else{
+      video.pause()
+    }
+  }
+
+  if(message.action == "next"){
+    document.querySelector('.ytp-next-button').click()
+  }
+
 });
