@@ -23,6 +23,13 @@ def next():
     data['executar_algo'] = True
     return jsonify(data)
 
+@app.route('/pause')
+def pause():
+    global data
+    data['function'] = 'pause'
+    data['executar_algo'] = True
+    return jsonify(data)
+
 @app.route('/get_video', methods=['POST'])
 def get_video():
     global data

@@ -1,28 +1,6 @@
 const your_ipv4_ip = '10.113.1.50';
 var get_reccomendation = true
 
-function set_reccomendation(){
-  setTimeout(() => {
-    get_reccomendation = true;
-    onload_get_reccomendation();
-  }, 5000)
-}
-
-function change_video(data, tab){
-  chrome.tabs.sendMessage(tab.id, {
-    action: "change_video",
-    url: data.url
-  }, (res) => {
-    if (chrome.runtime.lastError) {
-      console.error("Erro ao enviar mensagem:", chrome.runtime.lastError.message);
-    } else {
-      console.log('ok, enviando');
-      fetch(`http://${your_ipv4_ip}:5000/changed`);
-      set_reccomendation()
-    }
-  });
-}
-
 setInterval(() => {
     fetch(`http://${your_ipv4_ip}:5000/change_video`)
       .then(res => res.json())
@@ -37,6 +15,9 @@ setInterval(() => {
               if(data.function == "next"){
                 next(data, tab);
               }
+              if(data.function == "pause"){
+                pausar(data, tab);
+              }
             } else {
               console.warn("Nenhuma aba do YouTube ativa encontrada.");
             }
@@ -47,14 +28,37 @@ setInterval(() => {
       .catch(err => console.error('Erro ao verificar tarefas:', err));
 }, 5000);
 
+function change_video(data, tab){
+  chrome.tabs.sendMessage(tab.id, {
+    action: "change_video",
+    url: data.url
+  }, (res) => {
+    if (chrome.runtime.lastError) {
+      console.error("Erro ao mudar video por url/recomendação:", chrome.runtime.lastError.message);
+    } else {
+      fetch(`http://${your_ipv4_ip}:5000/changed`);
+      set_reccomendation()
+    }
+  });
+}
 
 function next(data, tab){
   chrome.tabs.sendMessage(tab.id, {action: "next"}, (res) => {
     if(chrome.runtime.lastError){
-      console.log('erro ao enviar', chrome.runtime.lastError.message)
+      console.log('erro ao executar proximo video', chrome.runtime.lastError.message)
     }else{
-      fetch(`http://${your_ipv4_ip}:5000/changed`).then(response => response.json()).then(data => console.log(data))
+      fetch(`http://${your_ipv4_ip}:5000/changed`)
       set_reccomendation()
+    }
+  })
+}
+
+function pause(data, id){
+  chrome.tabs.sendMessage(tab.id, {action: "pause"}, (res) => {
+    if(crhome.runtime.lastError){
+      console.log("erro ao tentar pausar ou despausar o video", chrome.runtime.lastError.message)
+    }else{
+      fetch(`http://${your_ipv4_ip}:5000/changed`)
     }
   })
 }
@@ -93,5 +97,12 @@ chrome.tabs.onUpdated.addListener(function(tabId, changeInfo, tab) {
     }
    }
 });
+
+function set_reccomendation(){
+  setTimeout(() => {
+    get_reccomendation = true;
+    onload_get_reccomendation();
+  }, 5000)
+}
 
 var get_reccomendation_interval =  setInterval(onload_get_reccomendation , 4000)

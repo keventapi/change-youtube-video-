@@ -87,6 +87,7 @@
         <input type="text" name="url" id="youtube_url" placeholder="Cole a URL do vídeo aqui">
         <input type="submit" value="Enviar">
         <input type="button" value="next" id="next">
+        <input type="button" value="❚❚/▶" id="pause">
         <div id="recomendacoes">
             {% if dado.recomendations %}
                 <h3>Recomendações:</h3>
@@ -101,8 +102,15 @@
     <script>
         const ip = '10.113.1.50'
         var conteudo = {}
-        const next = document.getElementById('next')
 
+        const pause = document.getElementById('pause')
+        pause.addEventListener('click', () => {
+            fetch(`http://${ip}:5000/pause`).then((response) => response.json()).then((data) => {
+                console.log(data)
+            })
+        })
+
+        const next = document.getElementById('next')
         next.addEventListener('click', () => {
             fetch(`http://${ip}:5000/next`)
         })

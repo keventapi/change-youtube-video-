@@ -79,13 +79,14 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   }
 
 
-  if(message.action == "pausar"){
+  if(message.action == "pause"){
     video = document.querySelector('video')
     if(video.paused){
       video.play()
     }else{
       video.pause()
     }
+    sendResponse({action: "ok"});
   }
 
 
