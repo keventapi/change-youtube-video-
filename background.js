@@ -1,5 +1,12 @@
-const your_ipv4_ip = '192.168.5.102';
+const your_ipv4_ip = '10.113.1.50';
 var get_reccomendation = true
+
+function set_reccomendation(){
+  setTimeout(() => {
+    get_reccomendation = true;
+    onload_get_reccomendation();
+  }, 5000)
+}
 
 function change_video(data, tab){
   chrome.tabs.sendMessage(tab.id, {
@@ -11,10 +18,7 @@ function change_video(data, tab){
     } else {
       console.log('ok, enviando');
       fetch(`http://${your_ipv4_ip}:5000/changed`);
-      setTimeout(() => {
-        get_reccomendation = true;
-        onload_get_reccomendation();
-      }, 5000)
+      set_reccomendation()
     }
   });
 }
@@ -28,7 +32,10 @@ setInterval(() => {
             const tab = tabs[0];
             if (tab && tab.url.includes("youtube.com/watch?v")) {
               if(data.function == "change_video"){
-                change_video(data, tab)
+                change_video(data, tab);
+              }
+              if(data.function == "next"){
+                next(data, tab);
               }
             } else {
               console.warn("Nenhuma aba do YouTube ativa encontrada.");
@@ -40,6 +47,17 @@ setInterval(() => {
       .catch(err => console.error('Erro ao verificar tarefas:', err));
 }, 5000);
 
+
+function next(data, tab){
+  chrome.tabs.sendMessage(tab.id, {action: "next"}, (res) => {
+    if(chrome.runtime.lastError){
+      console.log('erro ao enviar', chrome.runtime.lastError.message)
+    }else{
+      fetch(`http://${your_ipv4_ip}:5000/changed`).then(response => response.json()).then(data => console.log(data))
+      set_reccomendation()
+    }
+  })
+}
 
 function onload_get_reccomendation(){
     chrome.tabs.query({active: true, currentWindow: true}, function(tabs){

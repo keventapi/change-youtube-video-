@@ -6,7 +6,7 @@ CORS(app)
 
 data = {
     'url': None,
-    'function': 'change_video',
+    'function': '',
     'executar_algo': False,
     'recomendations': {}
 }
@@ -16,11 +16,19 @@ def home():
     global data
     return render_template('home.html', dado=data)
 
+@app.route('/next')
+def next():
+    global data
+    data['function'] = 'next'
+    data['executar_algo'] = True
+    return jsonify(data)
+
 @app.route('/get_video', methods=['POST'])
 def get_video():
     global data
     url = request.form.get('url')
     data['executar_algo'] = True
+    data['function'] = 'change_video'
     data['url'] = url
     return render_template('home.html', dado=data)
 
@@ -33,6 +41,7 @@ def change_video():
 def changed():
     global data
     data['executar_algo'] = False
+    data['function'] = ''
     return jsonify(data)
 
 @app.route('/reccomendations', methods=['POST'])

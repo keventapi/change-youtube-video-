@@ -86,6 +86,7 @@
     <form action="/get_video" method="POST" id="form">
         <input type="text" name="url" id="youtube_url" placeholder="Cole a URL do vídeo aqui">
         <input type="submit" value="Enviar">
+        <input type="button" value="next" id="next">
         <div id="recomendacoes">
             {% if dado.recomendations %}
                 <h3>Recomendações:</h3>
@@ -98,8 +99,14 @@
     
 
     <script>
-        const ip = '192.168.5.102'
+        const ip = '10.113.1.50'
         var conteudo = {}
+        const next = document.getElementById('next')
+
+        next.addEventListener('click', () => {
+            fetch(`http://${ip}:5000/next`)
+        })
+
         setInterval(get_reccomendations, 1500)
         function get_reccomendations(){
             fetch(`http://${ip}:5000/get_reccomendetions`).then(data => data.json()).then(response => {
