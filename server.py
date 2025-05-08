@@ -8,6 +8,7 @@ data = {
     'url': None,
     'function': '',
     'executar_algo': False,
+    'volume': None,
     'recomendations': {}
 }
 
@@ -39,8 +40,21 @@ def get_video():
     data['url'] = url
     return render_template('home.html', dado=data)
 
-@app.route('/change_video')
+@app.route('/get_data')
 def change_video():
+    global data
+    return jsonify(data)
+
+@app.route('/post_volume', methods=['POST'])
+def post_volume():
+    global data
+    volume = request.get_json()
+    if type(volume) == float:
+        data['volume'] = volume['volume']
+    return jsonify(data)
+
+@app.route('/get_volume')
+def get_volume():
     global data
     return jsonify(data)
 

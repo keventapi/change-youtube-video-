@@ -70,6 +70,12 @@ function get_recommendation(){
   }, 10000)
 }
 
+function get_volume(){
+  video = document.querySelector('video');
+  volume = video.volume;
+  return volume
+}
+
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.action === "collect_recommendations") {
@@ -94,6 +100,11 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     document.querySelector('.ytp-next-button').click()
     sendResponse({status: "ok"})
     return true;
+  }
+
+  if(message.action == "get_volume"){
+    let current_volume = get_volume();
+    sendResponse({status: "ok", volume: current_volume})
   }
   return true;
 });

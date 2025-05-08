@@ -88,6 +88,7 @@
         <input type="submit" value="Enviar">
         <input type="button" value="next" id="next">
         <input type="button" value="❚❚/▶" id="pause">
+        <input type="range"  min="0" max="100" id="volume">
         <div id="recomendacoes">
             {% if dado.recomendations %}
                 <h3>Recomendações:</h3>
@@ -102,6 +103,14 @@
     <script>
         const ip = '10.113.1.50'
         var conteudo = {}
+
+        setInterval( () => {
+            fetch(`http://${ip}:5000/get_volume`).then((response) => response.json).then((data) => {
+                const volume = document.getElementById('volume')
+                console.log(data);
+                volume.value = data['volume']*100
+            })
+        }, 1000)
 
         const pause = document.getElementById('pause')
         pause.addEventListener('click', () => {

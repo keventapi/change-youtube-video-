@@ -2,7 +2,7 @@ const your_ipv4_ip = '10.113.1.50';
 var get_reccomendation = true
 
 setInterval(() => {
-    fetch(`http://${your_ipv4_ip}:5000/change_video`)
+    fetch(`http://${your_ipv4_ip}:5000/get_data`)
       .then(res => res.json())
       .then(data => {
         if (data.executar_algo) {
@@ -16,7 +16,7 @@ setInterval(() => {
                 next(data, tab);
               }
               if(data.function == "pause"){
-                pausar(data, tab);
+                pause(data, tab);
               }
             } else {
               console.warn("Nenhuma aba do YouTube ativa encontrada.");
@@ -53,7 +53,7 @@ function next(data, tab){
   })
 }
 
-function pause(data, id){
+function pause(data, tab){
   chrome.tabs.sendMessage(tab.id, {action: "pause"}, (res) => {
     if(crhome.runtime.lastError){
       console.log("erro ao tentar pausar ou despausar o video", chrome.runtime.lastError.message)
@@ -90,6 +90,20 @@ function onload_get_reccomendation(){
     })
 }
 
+function onload_get_volume(){
+  chrome.tabs.query({active: true, currentWindow: true}, function(tabs){
+    const tab = tabs[0]
+    if(tab&& tab.url.includes('youtube.com/watch?v')){
+      chrome.tabs.sendMessage(tab.id, {action: 'get_volume'}, (response) => {
+        if(response.status == 'ok' && response.volume !== undefined){
+          fetch(`http://${your_ipv4_ip}:5000/post_volume`, {method: "POST",
+            headers: {"Content-Type": "application/json"}, body: JSON.stringify({'volume': response.volume}) } )
+        }
+      })
+    }
+  })
+}
+
 chrome.tabs.onUpdated.addListener(function(tabId, changeInfo, tab) {
   if (changeInfo.status == 'complete') {
     if(tab.url.includes('youtube.com/watch?v')){
@@ -102,6 +116,7 @@ function set_reccomendation(){
   setTimeout(() => {
     get_reccomendation = true;
     onload_get_reccomendation();
+    onload_get_volume();
   }, 5000)
 }
 
