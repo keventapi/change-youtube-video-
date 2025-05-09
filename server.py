@@ -9,7 +9,7 @@ data = {
     'function': '',
     'executar_algo': False,
     'volume': None,
-    'recomendations': {}
+    'recommendations': {}
 }
 
 @app.route('/')
@@ -57,24 +57,24 @@ def get_volume():
     global data
     return jsonify(data)
 
-@app.route('/changed')
+@app.route('/reset_data')
 def changed():
     global data
     data['executar_algo'] = False
     data['function'] = ''
     return jsonify(data)
 
-@app.route('/reccomendations', methods=['POST'])
+@app.route('/post_recommendations', methods=['POST'])
 def reccomendations():
     global data
     ytreccomendations = request.get_json()
     print(ytreccomendations)
     if ytreccomendations != {}:
-        data['recomendations'] = ytreccomendations
+        data['recommendations'] = ytreccomendations
     print(data)
     return render_template('home.html', dado=data)
 
-@app.route('/get_reccomendetions')
+@app.route('/get_recommendetions')
 def get_reccomendations():
     global data
     return jsonify(data)

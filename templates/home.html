@@ -126,7 +126,7 @@
 
         setInterval(get_reccomendations, 1500)
         function get_reccomendations(){
-            fetch(`http://${ip}:5000/get_reccomendetions`).then(data => data.json()).then(response => {
+            fetch(`http://${ip}:5000/get_recommendetions`).then(data => data.json()).then(response => {
                 console.log(JSON.stringify(conteudo) == JSON.stringify(response.recomendations))
                 if(JSON.stringify(conteudo) != JSON.stringify(response.recomendations)){
                     let div = document.getElementById('recomendacoes')

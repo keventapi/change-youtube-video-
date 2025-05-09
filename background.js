@@ -1,5 +1,6 @@
 const your_ipv4_ip = '192.168.5.102';
-var get_reccomendation = true
+var should_get_recommendations = true;
+var get_volume = true;
 
 setInterval(() => {
     fetch(`http://${your_ipv4_ip}:5000/get_data`)
@@ -36,8 +37,8 @@ function change_video(data, tab){
     if (chrome.runtime.lastError) {
       console.error("Erro ao mudar video por url/recomendação:", chrome.runtime.lastError.message);
     } else {
-      fetch(`http://${your_ipv4_ip}:5000/changed`);
-      set_reccomendation()
+      fetch(`http://${your_ipv4_ip}:5000/reset_data`);
+      collect_recommendations()
     }
   });
 }
@@ -47,8 +48,8 @@ function next(data, tab){
     if(chrome.runtime.lastError){
       console.log('erro ao executar proximo video', chrome.runtime.lastError.message)
     }else{
-      fetch(`http://${your_ipv4_ip}:5000/changed`)
-      set_reccomendation()
+      fetch(`http://${your_ipv4_ip}:5000/reset_data`)
+      collect_recommendations()
     }
   })
 }
@@ -58,14 +59,14 @@ function pause(data, tab){
     if(chrome.runtime.lastError){
       console.log("erro ao tentar pausar ou despausar o video", chrome.runtime.lastError.message)
     }else{
-      fetch(`http://${your_ipv4_ip}:5000/changed`).then((response) => response.json()).then((data) => {
+      fetch(`http://${your_ipv4_ip}:5000/reset_data`).then((response) => response.json()).then((data) => {
         console.log(data);
       })
     }
   })
 }
 
-function onload_get_reccomendation(){
+function onload_should_get_recommendations(){
     chrome.tabs.query({active: true, currentWindow: true}, function(tabs){
       const tab = tabs[0]
       if (tab && tab.url.includes('youtube.com/watch?v')){
@@ -78,14 +79,18 @@ function onload_get_reccomendation(){
             }
 
             fetch(`http://${your_ipv4_ip}:5000/get_data`).then((res) => res.json()).then((data) => {
-              if (get_reccomendation || data.recomendations == [] || data_json != data.recomendations){
-                get_reccomendation = false
-                console.log(response.data)
-                
-                fetch(`http://${your_ipv4_ip}:5000/reccomendations`, {method: "POST",
-                  headers: {
-                  "Content-Type": "application/json"},
-                  body: JSON.stringify(data_json)
+              if (should_get_recommendations 
+                || Object.keys(data.recomendations).length === 0 
+                || JSON.stringify(data_json) != JSON.stringify(data.recomendations)){
+
+                  should_get_recommendations = false
+                  console.log(response.data)
+                  
+                  fetch(`http://${your_ipv4_ip}:5000/post_recommendations`, {method: "POST",
+                    headers: {
+                    "Content-Type": "application/json"},
+                    body: JSON.stringify(data_json)
+
                 })
             }
 
@@ -104,11 +109,10 @@ function onload_get_volume(){
     const tab = tabs[0]
     if(tab&& tab.url.includes('youtube.com/watch?v')){
       chrome.tabs.sendMessage(tab.id, {action: 'get_volume'}, (response) => {
-        console.log(response)
         if(response.status == 'ok' && response.volume !== undefined){
-          fetch(`http://${your_ipv4_ip}:5000/post_volume`, {method: "POST",
-            headers: {"Content-Type": "application/json"}, body: JSON.stringify({'volume': response.volume}) } )
-        }
+          fetch(`http://${your_ipv4_ip}:5000/post_volume`, {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify({'volume': response.volume}) } )
+          get_volume = false;
+          }
       })
     }
   })
@@ -117,16 +121,17 @@ function onload_get_volume(){
 chrome.tabs.onUpdated.addListener(function(tabId, changeInfo, tab) {
   if (changeInfo.status == 'complete') {
     if(tab.url.includes('youtube.com/watch?v')){
-      get_reccomendation = true
+      should_get_recommendations = true
     }
    }
 });
 
-function set_reccomendation(){
+function collect_recommendations(){
   setTimeout(() => {
-    get_reccomendation = true;
-    onload_get_reccomendation();
+    should_get_recommendations = true;
+    get_volume = true;
+    onload_should_get_recommendations();
   }, 5000)
 }
 
-var get_reccomendation_interval =  setInterval(onload_get_reccomendation , 4000)
+var should_get_recommendations_interval =  setInterval(onload_should_get_recommendations , 4000)
