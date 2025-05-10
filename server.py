@@ -1,8 +1,9 @@
 from flask import Flask, request, render_template, jsonify
 from flask_cors import CORS
+from flask_socketio import SocketIO, emit 
 
 app = Flask(__name__)
-CORS(app)
+socket = SocketIO(app, cors_allowed_origins="*", async_mode="eventlet")
 
 data = {
     'url': None,
@@ -17,67 +18,64 @@ def home():
     global data
     return render_template('home.html', dado=data)
 
-@app.route('/next')
-def next():
+@socket.on('next')
+def handle_next(message):
     global data
     data['function'] = 'next'
-    data['executar_algo'] = True
-    return jsonify(data)
+    data['executar_algo'] = message['should_go_next']
+    socket.emit("next", data)
 
-@app.route('/pause')
-def pause():
+@socket.on('pause')
+def handle_pause(message):
     global data
     data['function'] = 'pause'
-    data['executar_algo'] = True
-    return jsonify(data)
+    data['executar_algo'] = message['should_pause']
+    socket.emit('pause', data)
 
-@app.route('/get_video', methods=['POST'])
-def get_video():
+@socket.on('get_video')
+def get_video(message):
     global data
-    url = request.form.get('url')
+    url = message['url']
     data['executar_algo'] = True
     data['function'] = 'change_video'
     data['url'] = url
-    return render_template('home.html', dado=data)
+    socket.emit('change_video', data)
 
 @app.route('/get_data')
 def change_video():
     global data
     return jsonify(data)
 
-@app.route('/post_volume', methods=['POST'])
-def post_volume():
+@socket.on('new_volume')
+def new_volume(message):
     global data
-    volume = request.get_json()
+    volume = message['volume']
     data['volume'] = int(volume['volume'])
-    return jsonify(data)
+    socket.emit('change_volume', data)
 
-@app.route('/get_volume')
-def get_volume():
+@socket.on('get_volume')
+def get_volume(msg):
     global data
-    return jsonify(data)
+    socket.emit('get_volume', data)
 
-@app.route('/reset_data')
-def changed():
+@socket.on('reset_data')
+def reset_data(msg):
     global data
     data['executar_algo'] = False
     data['function'] = ''
-    return jsonify(data)
 
-@app.route('/post_recommendations', methods=['POST'])
-def reccomendations():
+@socket.on('post_recommendations')
+def post_recommendations(msg):
     global data
-    ytreccomendations = request.get_json()
-    print(ytreccomendations)
-    if ytreccomendations != {}:
-        data['recommendations'] = ytreccomendations
-    print(data)
-    return render_template('home.html', dado=data)
+    ytrecommendations = msg['recommendations']
+    if ytrecommendations != {}:
+        data['recommendations'] = ytrecommendations
+        print(ytrecommendations)
 
-@app.route('/get_recommendetions')
-def get_reccomendations():
+@socket.on('send_recommendations')
+def send_recommendations():
     global data
-    return jsonify(data)
+    socket.emit('new_recommendations', data)
 
 if __name__ == "__main__":
-    app.run(debug=True, host='0.0.0.0', port=5000)
+    socket.run(app, debug=True, host='0.0.0.0', port=5000)
