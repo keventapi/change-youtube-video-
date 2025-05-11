@@ -1,10 +1,66 @@
 let recommendations = []
+let get_volume = true;
 
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  if(message.action == "emit_recommendations"){
+    get_recommendation().then((resolved_recommendations)=> {
+      let data_recommendations = resolved_recommendations;
+      if(data_recommendations.length > 0){
+        socket.emit('post_recommendations', {recommendations: data_recommendations})
+        sendResponse({status: "ok"})
+      }else{
+        sendResponse({status: "void_list"})
+      }
+    })
+  }
+  return true;
+})
+
+
+
+const ip = "192.168.5.102"
+const socket = io(`https://${ip}:5000`, { transports: ["websocket"] });
+
+socket.on('connect', () => {
+  console.log('Conectado ao WebSocket');
+});
+
+socket.on('connect_error', (err) => {
+  console.error('Erro de conexão:', err);
+});
+
+socket.on('disconnect', () => {
+  console.log('Desconectado do WebSocket');
+});
+  
+
+
+chrome.tabs.onUpdated.addListener(function(tabId, changeInfo, tab) {
+  if (changeInfo.status == 'complete') {
+    if(tab.url.includes('youtube.com/watch?v')){
+      emit_recommendations()
+    }
+  }
+})
+
+function emit_recommendations(){
+  console.log('emit_recommendations was called')
+  chrome.tabs.query({active: true, currentWindow: true}, function(tabs){
+    const tab = tabs[0]
+    if (tab && tab.url.includes('youtube.com/watch?v')){
+        get_recommendation().then((resolved_recommendations)=> {
+          let data_recommendations = resolved_recommendations;
+          socket.emit('post_recommendations', {recommendations: data_recommendations})
+        })
+    }
+  })
+}
 
 function get_recommendation(){
   const my_promise = new Promise ((resolve) => {
     setTimeout(() => {
       const current_video = window.location.search.split('v=')[1].split('&')[0]
+      let recommendations = []
       let thumbs = []
       let titles = []
       let links = []
@@ -63,7 +119,7 @@ function get_recommendation(){
   return my_promise
 }
 
-
+/*
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
   if (message.action === "change_video") {
@@ -110,3 +166,4 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     return true;
   }
 });
+*/

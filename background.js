@@ -1,7 +1,40 @@
-const your_ipv4_ip = '192.168.5.102';
+let MAX_ATTEMPTS = {};
+
+function attempt_emit_recommendations(tabId){
+  MAX_ATTEMPTS[tabId] += 1;
+  chrome.tabs.sendMessage(tabId, {
+        action: "emit_recommendations"
+      }, (res) => {
+        if (chrome.runtime.lastError) {
+          console.error("Erro ao enviar recomendações para o servidor:", chrome.runtime.lastError.message);
+        }else {
+          if(res.status == 'void_list'){
+            if(MAX_ATTEMPTS[tabId] <= 3){
+              setTimeout(() => {
+                attempt_emit_recommendations(tabId)
+              }, 1000)
+            }
+          }else{
+            MAX_ATTEMPTS[tabId] = 0;
+          }
+        }
+      })
+}
+
+
+chrome.tabs.onUpdated.addListener(function(tabId, changeInfo, tab) {
+  if (changeInfo.status === 'complete') {
+    MAX_ATTEMPTS[tabId] = 0;
+    if (tab.url.includes('youtube.com/watch?v')) {
+      attempt_emit_recommendations(tabId);
+    }
+  }
+});
+
+/*const your_ipv4_ip = '192.168.5.102';
 var should_get_recommendations = true;
 var get_volume = true;
-
+importScripts('min/socket.io.min.js')
 setInterval(() => {
     fetch(`http://${your_ipv4_ip}:5000/get_data`)
       .then(res => res.json())
@@ -80,8 +113,8 @@ function onload_should_get_recommendations(){
 
             fetch(`http://${your_ipv4_ip}:5000/get_data`).then((res) => res.json()).then((data) => {
               if (should_get_recommendations 
-                || Object.keys(data.recomendations).length === 0 
-                || JSON.stringify(data_json) != JSON.stringify(data.recomendations)){
+                || Object.keys(data.recommendations).length === 0 
+                || JSON.stringify(data_json) != JSON.stringify(data.recommendations)){
 
                   should_get_recommendations = false
                   console.log(response.data)
@@ -134,4 +167,4 @@ function collect_recommendations(){
   }, 5000)
 }
 
-var should_get_recommendations_interval =  setInterval(onload_should_get_recommendations , 4000)
+var should_get_recommendations_interval =  setInterval(onload_should_get_recommendations , 4000)*/

@@ -1,6 +1,9 @@
 from flask import Flask, request, render_template, jsonify
 from flask_cors import CORS
 from flask_socketio import SocketIO, emit 
+import ssl
+import eventlet
+from eventlet import wsgi
 
 app = Flask(__name__)
 socket = SocketIO(app, cors_allowed_origins="*", async_mode="eventlet")
@@ -17,6 +20,15 @@ data = {
 def home():
     global data
     return render_template('home.html', dado=data)
+
+@socket.on('connect')
+def handle_connect():
+    print("Cliente conectado!")
+    emit('connect_response', {'message': 'Conexão estabelecida com sucesso!'})
+
+@socket.on('disconnect')
+def handle_disconnect():
+    print('Cliente desconectado!')
 
 @socket.on('next')
 def handle_next(message):
@@ -68,14 +80,22 @@ def reset_data(msg):
 def post_recommendations(msg):
     global data
     ytrecommendations = msg['recommendations']
-    if ytrecommendations != {}:
+    if ytrecommendations:
         data['recommendations'] = ytrecommendations
         print(ytrecommendations)
+    socket.emit('send_recommendations')
 
 @socket.on('send_recommendations')
 def send_recommendations():
     global data
     socket.emit('new_recommendations', data)
 
+
+certfile = 'cert.pem'
+keyfile = 'key.pem'
+
+context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
+context.load_cert_chain(certfile, keyfile)
+
 if __name__ == "__main__":
-    socket.run(app, debug=True, host='0.0.0.0', port=5000)
+    eventlet.wsgi.server(eventlet.wrap_ssl(eventlet.listen(('0.0.0.0', 5000)), certfile=certfile, keyfile=keyfile), app)
