@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Recomendações do YouTube</title>
+    <script src="https://cdn.socket.io/4.7.5/socket.io.min.js" integrity="sha384-6zOgOqIrEMZUF+YIdX5WkN+DeJht9AIenfvMJGJQU+zspGDqzncDYbZppXtcTTSy" crossorigin="anonymous"></script>
     <style>
         body {
             background-color: black;
@@ -100,10 +101,15 @@
 
     
 
-    <script>
+    <script src="../socket.io.min.js">
+        
         const ip = '192.168.5.102'
+        const socket = io(`https://${ip}:5000`)
+        socket.on('new_recommendations', (data) => {
+            console.log(data)
+        })
         var conteudo = {}
-
+        /*
         setInterval( () => {
             fetch(`http://${ip}:5000/get_volume`).then((response) => response.json()).then((data) => {
                 const volume = document.getElementById('volume')
@@ -161,7 +167,7 @@
                     }          
                 }
             })
-    }
+    }*/
     </script>
 </body>
 </html>
