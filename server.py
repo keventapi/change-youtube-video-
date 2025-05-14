@@ -42,7 +42,7 @@ def handle_pause(message):
     global data
     data['function'] = 'pause'
     data['executar_algo'] = message['should_pause']
-    socket.emit('pause', data)
+    socket.emit('emit_pause', data)
 
 @socket.on('get_video')
 def get_video(message):
@@ -83,13 +83,7 @@ def post_recommendations(msg):
     if ytrecommendations:
         data['recommendations'] = ytrecommendations
         print(ytrecommendations)
-    socket.emit('send_recommendations')
-
-@socket.on('send_recommendations')
-def send_recommendations():
-    global data
     socket.emit('new_recommendations', data)
-
 
 certfile = 'cert.pem'
 keyfile = 'key.pem'

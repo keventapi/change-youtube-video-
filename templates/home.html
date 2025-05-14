@@ -91,6 +91,7 @@
         <input type="button" value="❚❚/▶" id="pause">
         <input type="range"  min="0" max="100" id="volume">
         <div id="recomendacoes">
+          <p id="log"></p>
             {% if dado.recomendations %}
                 <h3>Recomendações:</h3>
             {% else %}
@@ -101,14 +102,53 @@
 
     
 
-    <script src="../socket.io.min.js">
+<script src="{{ url_for('static', filename='socket.io.js') }}">
+        var conteudo = {}
+        function remove_old_recommendations(){
+            if(JSON.stringify(conteudo) != JSON.stringify(response.recomendations)){
+                let div = document.getElementById('recomendacoes')
+                while(div.firstChild){
+                  div.removeChild(div.firstChild)
+              }
+            }
+        }
         
-        const ip = '192.168.5.102'
+        function add_recommendations(response){
+          remove_old_recommendations()
+          if(JSON.stringify(response.recomendations) != JSON.stringify({}) && JSON.stringify(conteudo) != JSON.stringify(response.recomendations)){
+                    conteudo = response.recomendations
+                    for(let key in conteudo){
+                        let container = document.createElement('div')
+                        container.className = 'container'
+                        let img = document.createElement('img')
+                        img.src = conteudo[key]['thumb']
+                        let button = document.createElement('input')
+                        button.value = key
+                        button.type = 'button'
+                        button.addEventListener('click', () =>{
+                            let url = conteudo[key]['url']
+                            let input = document.getElementById('youtube_url')
+                            input.value = url
+                            let form = document.getElementById('form')
+                            console.log(url)
+                            form.submit()
+                        })
+                        div = document.getElementById('recomendacoes')
+                        container.appendChild(img)
+                        container.appendChild(button)
+                        div.append(container)
+                    }          
+                }
+        }
+
+        const ip = 'localhost'
         const socket = io(`https://${ip}:5000`)
         socket.on('new_recommendations', (data) => {
-            console.log(data)
+            const log = document.getElementById('log')
+            log.innerHTML = data
+            add_recommendations(data)
         })
-        var conteudo = {}
+        
         /*
         setInterval( () => {
             fetch(`http://${ip}:5000/get_volume`).then((response) => response.json()).then((data) => {
@@ -133,39 +173,10 @@
         setInterval(get_reccomendations, 1500)
         function get_reccomendations(){
             fetch(`http://${ip}:5000/get_recommendetions`).then(data => data.json()).then(response => {
-                console.log(JSON.stringify(conteudo) == JSON.stringify(response.recomendations))
-                if(JSON.stringify(conteudo) != JSON.stringify(response.recomendations)){
-                    let div = document.getElementById('recomendacoes')
-                    while(div.firstChild){
-                        div.removeChild(div.firstChild)
-                    }
-                    
-                }
+                
+                
 
-                if(JSON.stringify(response.recomendations) != JSON.stringify({}) && JSON.stringify(conteudo) != JSON.stringify(response.recomendations)){
-                    conteudo = response.recomendations
-                    for(let key in conteudo){
-                        let container = document.createElement('div')
-                        container.className = 'container'
-                        let img = document.createElement('img')
-                        img.src = conteudo[key]['thumb']
-                        let button = document.createElement('input')
-                        button.value = key
-                        button.type = 'button'
-                        button.addEventListener('click', () =>{
-                            let url = conteudo[key]['url']
-                            let input = document.getElementById('youtube_url')
-                            input.value = url
-                            let form = document.getElementById('form')
-                            console.log(url)
-                            form.submit()
-                        })
-                        div = document.getElementById('recomendacoes')
-                        container.appendChild(img)
-                        container.appendChild(button)
-                        div.append(container)
-                    }          
-                }
+                
             })
     }*/
     </script>
