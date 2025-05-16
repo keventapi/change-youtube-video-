@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Recomendações do YouTube</title>
-    <script src="https://cdn.socket.io/4.7.5/socket.io.min.js" integrity="sha384-6zOgOqIrEMZUF+YIdX5WkN+DeJht9AIenfvMJGJQU+zspGDqzncDYbZppXtcTTSy" crossorigin="anonymous"></script>
+    <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
     <style>
         body {
             background-color: black;
@@ -84,7 +84,7 @@
     </style>
 </head>
 <body>
-    <form action="/get_video" method="POST" id="form">
+    <form method="POST" id="form">
         <input type="text" name="url" id="youtube_url" placeholder="Cole a URL do vídeo aqui">
         <input type="submit" value="Enviar">
         <input type="button" value="next" id="next">
@@ -100,12 +100,14 @@
         </div>
     </form>
 
-    
-
-<script src="{{ url_for('static', filename='socket.io.js') }}">
+<script>
         var conteudo = {}
-        function remove_old_recommendations(){
-            if(JSON.stringify(conteudo) != JSON.stringify(response.recomendations)){
+        document.getElementById("form").addEventListener("submit", function(event) {
+            event.preventDefault();
+        });
+
+        function remove_old_recommendations(response){
+            if(JSON.stringify(conteudo) != JSON.stringify(response.recommendations)){
                 let div = document.getElementById('recomendacoes')
                 while(div.firstChild){
                   div.removeChild(div.firstChild)
@@ -114,9 +116,9 @@
         }
         
         function add_recommendations(response){
-          remove_old_recommendations()
+          remove_old_recommendations(response)
           if(JSON.stringify(response.recomendations) != JSON.stringify({}) && JSON.stringify(conteudo) != JSON.stringify(response.recomendations)){
-                    conteudo = response.recomendations
+                    conteudo = response.recommendations
                     for(let key in conteudo){
                         let container = document.createElement('div')
                         container.className = 'container'
@@ -126,12 +128,9 @@
                         button.value = key
                         button.type = 'button'
                         button.addEventListener('click', () =>{
-                            let url = conteudo[key]['url']
+                            let video_url = conteudo[key]['url']
                             let input = document.getElementById('youtube_url')
-                            input.value = url
-                            let form = document.getElementById('form')
-                            console.log(url)
-                            form.submit()
+                            socket.emit('get_video_from_client', {url: video_url})
                         })
                         div = document.getElementById('recomendacoes')
                         container.appendChild(img)
@@ -141,14 +140,21 @@
                 }
         }
 
-        const ip = 'localhost'
-        const socket = io(`https://${ip}:5000`)
+        const ip = '192.168.5.102'
+        const socket = io(`http://${ip}:5000`)
+
+        socket.emit('get_recommendations')
+
         socket.on('new_recommendations', (data) => {
-            const log = document.getElementById('log')
-            log.innerHTML = data
+            console.log(data)
             add_recommendations(data)
         })
         
+        const next = document.getElementById('next')
+        next.addEventListener('click', () => {
+            scoket.emit('next')
+        })
+
         /*
         setInterval( () => {
             fetch(`http://${ip}:5000/get_volume`).then((response) => response.json()).then((data) => {

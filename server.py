@@ -1,7 +1,6 @@
-from flask import Flask, request, render_template, jsonify
+from flask import Flask, request, render_template, jsonify, send_from_directory
 from flask_cors import CORS
 from flask_socketio import SocketIO, emit 
-import ssl
 import eventlet
 from eventlet import wsgi
 
@@ -31,20 +30,20 @@ def handle_disconnect():
     print('Cliente desconectado!')
 
 @socket.on('next')
-def handle_next(message):
+def handle_next():
     global data
     data['function'] = 'next'
-    data['executar_algo'] = message['should_go_next']
+    data['executar_algo'] = True
     socket.emit("next", data)
 
 @socket.on('pause')
-def handle_pause(message):
+def handle_pause():
     global data
     data['function'] = 'pause'
-    data['executar_algo'] = message['should_pause']
+    data['executar_algo'] = True
     socket.emit('emit_pause', data)
 
-@socket.on('get_video')
+@socket.on('get_video_from_client')
 def get_video(message):
     global data
     url = message['url']
@@ -65,13 +64,13 @@ def new_volume(message):
     data['volume'] = int(volume['volume'])
     socket.emit('change_volume', data)
 
-@socket.on('get_volume')
-def get_volume(msg):
+@socket.on('emit_volume_to_client')
+def emit_volume_to_client(msg):
     global data
     socket.emit('get_volume', data)
 
 @socket.on('reset_data')
-def reset_data(msg):
+def reset_data():
     global data
     data['executar_algo'] = False
     data['function'] = ''
@@ -79,17 +78,22 @@ def reset_data(msg):
 @socket.on('post_recommendations')
 def post_recommendations(msg):
     global data
-    ytrecommendations = msg['recommendations']
+    ytrecommendations = {}
+    ytrecommendations_array = msg['recommendations']
+    
+    for i in ytrecommendations_array:
+        ytrecommendations[i["titulo"]] = {'url': i['link'], 'thumb': i['thumb']}
+
     if ytrecommendations:
         data['recommendations'] = ytrecommendations
         print(ytrecommendations)
     socket.emit('new_recommendations', data)
 
-certfile = 'cert.pem'
-keyfile = 'key.pem'
-
-context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
-context.load_cert_chain(certfile, keyfile)
+@socket.on('get_recommendations')
+def get_recommendations():
+    global data
+    socket.emit('new_recommendations', data)
 
 if __name__ == "__main__":
-    eventlet.wsgi.server(eventlet.wrap_ssl(eventlet.listen(('0.0.0.0', 5000)), certfile=certfile, keyfile=keyfile), app)
+    #certfile=certfile, keyfile=keyfile),
+    eventlet.wsgi.server(eventlet.listen(('0.0.0.0', 5000)), app)
