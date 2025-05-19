@@ -68,7 +68,7 @@ python server.py
 - O botão **"Next"** simula `Shift + N`, pulando para o próximo vídeo que o YouTube já preparou.
 - O botão com o símbolo de **pausar/despausar** funciona como esperado.
 - A **barra de volume** ajusta o som do vídeo, mas está com um pequeno bug: o YouTube tenta restaurar o volume anterior, o que pode causar uma leve oscilação.
-- Os **botões de recomendações** levam diretamente aos vídeos recomendados pelo YouTube. Antigamente apresentavam bugs, mas atualmente estão estáveis. Caso encontre algum problema, documente e envie feedback 🙏.
+- Os **botões de recomendações** levam diretamente aos vídeos recomendados pelo YouTube. Antigamente apresentavam bugs, mas atualmente estão estáveis. Caso encontre algum problema, documente e envie feedback.
 - A funcionalidade de **colar URL** era um protótipo e não está funcionando. O botão "enviar" também fazia parte dela.
 
 ---
