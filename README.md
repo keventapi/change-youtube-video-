@@ -25,7 +25,7 @@
 
 2. Instale as dependências com pip:
    ```bash
-   pip install flask flask-socketio
+   pip install flask flask-socketio eventlet
    ```
 
 ### Frontend (Extensão):
