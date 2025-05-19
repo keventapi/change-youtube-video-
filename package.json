@@ -1,0 +1,27 @@
+{
+  "name": "change-youtube-video--websocket",
+  "version": "1.0.0",
+  "main": "Test.js",
+  "scripts": {
+  "test": "echo \"Error: no test specified\" && exit 1",
+  "build": "vite build",
+  "dev": "vite"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "socket.io": "^4.8.1",
+    "socket.io-client": "^4.8.1",
+    "vite": "^6.3.5"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/keventapi/change-youtube-video-.git"
+  },
+  "keywords": [],
+  "bugs": {
+    "url": "https://github.com/keventapi/change-youtube-video-/issues"
+  },
+  "homepage": "https://github.com/keventapi/change-youtube-video-#readme",
+  "description": ""
+}
