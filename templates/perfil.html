@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Recomendações do YouTube</title>
+    <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+    <style>
+        body {
+            background-color: black;
+            color: white;
+            font-family: sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            min-height: 100vh;
+            margin: 0;
+        }
+
+        #form {
+            width: 100%;
+            max-width: 1000px;
+            text-align: center;
+        }
+
+        #youtube_url {
+            width: 80%;
+            padding: 10px;
+            margin-bottom: 10px;
+            border: none;
+            border-radius: 8px;
+        }
+
+        input[type="submit"] {
+            padding: 10px 20px;
+            background-color: #444;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+
+        #recomendacoes {
+            margin-top: 20px;
+            display: flex;
+            flex-direction: column; /* lista vertical */
+            align-items: center;     /* centraliza os containers */
+            gap: 20px;
+        }
+
+        .container {
+            background-color: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            padding: 10px;
+            border-radius: 12px;
+            width: 90%;
+            max-width: 400px;
+            text-align: center;
+        }
+
+        .container p {
+            flex: 1;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .container img {
+            width: 100%;
+            border-radius: 8px;
+        }
+
+        .container input[type="button"] {
+            width: 100%;
+            margin-top: 10px;
+            padding: 10px;
+            background-color: #222;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <form method="POST" id="form">
+        <input type="text" name="url" id="youtube_url" placeholder="Cole a URL do vídeo aqui">
+        <input type="submit" value="Enviar">
+        <input type="button" value="next" id="next">
+        <input type="button" value="❚❚/▶" id="pause">
+        <input type="range"  min="0" max="100" id="volume" step="1">
+        <div id="recomendacoes">
+          <p id="log"></p>
+                <h3>Recomendações:</h3>
+        </div>
+    </form>
+
+<script>
+        var conteudo = {}
+
+        function remove_old_recommendations(response){
+            if(JSON.stringify(conteudo) != JSON.stringify(response.recommendations)){
+                let div = document.getElementById('recomendacoes')
+                while(div.firstChild){
+                  div.removeChild(div.firstChild)
+              }
+            }
+        }
+        
+        function add_recommendations(response){
+          remove_old_recommendations(response)
+          if(JSON.stringify(response.recommendations) != JSON.stringify({}) && JSON.stringify(conteudo) != JSON.stringify(response.recommendations)){
+                    conteudo = response.recommendations
+                    for(let key in conteudo){
+                        let container = document.createElement('div')
+                        container.className = 'container'
+                        let img = document.createElement('img')
+                        img.src = conteudo[key]['thumb']
+                        let button = document.createElement('input')
+                        button.value = key
+                        button.type = 'button'
+                        button.addEventListener('click', () =>{
+                            let video_url = conteudo[key]['url']
+                            let input = document.getElementById('youtube_url')
+                            window.scrollTo(0, 0)
+                            socket.emit('get_video_from_client', {url: video_url})
+                        })
+                        div = document.getElementById('recomendacoes')
+                        container.appendChild(img)
+                        container.appendChild(button)
+                        div.append(container)
+                    }          
+                }
+        }
+
+        function start(){
+            socket.emit('get_recommendations')
+            socket.emit('emit_volume_to_client')
+        }
+
+
+        function throttle(func, limit) {
+            let lastCall = 0;
+            return function (...args) {
+                const now = Date.now();
+                if (now - lastCall >= limit) {
+                lastCall = now;
+                func.apply(this, args);
+                }
+            };
+        }
+
+        document.getElementById("form").addEventListener("submit", function(event) {
+            event.preventDefault();
+        });
+
+        function remove_old_recommendations(response){
+            if(JSON.stringify(conteudo) != JSON.stringify(response.recommendations)){
+                let div = document.getElementById('recomendacoes')
+                while(div.firstChild){
+                  div.removeChild(div.firstChild)
+              }
+            }
+        }
+        
+        function add_recommendations(response){
+          console.log(response)
+          remove_old_recommendations(response)
+          if(JSON.stringify(response.recommendations) != JSON.stringify({}) && JSON.stringify(conteudo) != JSON.stringify(response.recommendations)){
+                    conteudo = response.recommendations
+                    for(let key in conteudo){
+                        let container = document.createElement('div')
+                        container.className = 'container'
+                        let img = document.createElement('img')
+                        img.src = conteudo[key]['thumb']
+                        let button = document.createElement('input')
+                        button.value = key
+                        button.type = 'button'
+                        button.addEventListener('click', () =>{
+                            let video_url = conteudo[key]['url']
+                            let input = document.getElementById('youtube_url')
+                            window.scrollTo(0, 0)
+                            socket.emit('get_video_from_client', {url: video_url})
+                        })
+                        div = document.getElementById('recomendacoes')
+                        container.appendChild(img)
+                        container.appendChild(button)
+                        div.append(container)
+                    }          
+                }
+        }
+
+        function emit_volume(){
+            const volume_element = document.getElementById('volume')
+            socket.emit('new_volume', {volume: volume_element.value})
+        }
+        
+        function sync_volume(data){
+            const volume = document.getElementById('volume')
+            volume.value = data['volume']
+        }
+
+        function set_volume(data){
+            const volume = document.getElementById('volume')
+            volume.value = data['volume']
+        }
+
+        const ip = '192.168.5.102'
+        const socket = io(`http://${ip}:5000`)
+
+        socket.on('new_recommendations', (data) => {
+            console.log(data)
+            add_recommendations(data)
+        })
+
+        socket.on('sync_volume', (data) => {
+            sync_volume(data);
+        })
+
+        const next = document.getElementById('next')
+        next.addEventListener('click', () => {
+            socket.emit('next')
+        })
+
+        const pause = document.getElementById('pause')
+        pause.addEventListener('click', () => {
+            socket.emit('pause')
+        })
+
+        const volume = document.getElementById('volume')
+        volume.addEventListener('input', throttle((event) => {
+            emit_volume()
+        }, 100))
+	
+        start()
+    </script>
+</body>
+</html>
+
+
+

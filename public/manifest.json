@@ -1,0 +1,39 @@
+{
+  "manifest_version": 3,
+  "name": "YouTube Auto Next",
+  "version": "1.0",
+  "permissions": [
+    "scripting",
+    "tabs",
+    "webNavigation",
+    "webRequest",
+    "webRequestBlocking",
+    "storage"
+  ],
+  "action": {
+    "default_popup": "popup.html"
+  },
+  "host_permissions": [
+    "http://192.168.5.102:5000/",
+    "ws://192.168.5.102:5000/"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_security_policy": {
+    "extension_pages": "script-src 'self'; object-src 'self'; connect-src http://192.168.5.102:5000/ ws://192.168.5.102:5000/ *"
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://www.youtube.com/*"],
+      "js": ["content.js"],
+      "run_at": "document_idle"
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": [],
+      "matches": ["<all_urls>"]
+    }
+  ]
+}

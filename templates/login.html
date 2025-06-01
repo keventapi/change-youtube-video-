@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Recomendações do YouTube login</title>
+        <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+    </head>
+    <body>
+        <input type="text" id="username">
+        <input type="password" id="password">
+        <input type="button" value="login" id="login">
+        <input type="button" value="sign up" id="register">
+        <span id="msg"></span>
+
+        <script>
+            login_button = document.getElementById('login')
+            function show_message(){
+                document.getElementById("msg")
+                msg.innerHTML = "usuario ou senha incorretos"
+            }
+            login_button.addEventListener('click', () => {
+                username = document.getElementById('username').value
+                password = document.getElementById('password').value
+                fetch('http://192.168.5.102:5000/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    credentials: 'include',
+                    body: JSON.stringify({
+                        usuario: username,
+                        senha: password
+                    })
+                    }).then(response => response.json()).then( (data) => {
+                        console.log(data)
+                        location.reload();
+                    })
+                })
+            register_button = document.getElementById("register")
+            register.addEventListener("click", () => {
+                window.location.href = "/signup"
+            })
+        </script>
+    </body>
+</html>
