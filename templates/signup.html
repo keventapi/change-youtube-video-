@@ -1,51 +1,126 @@
 <!DOCTYPE html>
-<html>
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Recomendações do YouTube login</title>
-        <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
-    </head>
-    <body>
-        <input type="text" id="username">
-        <input type="password" id="password">
-        <input type="button" value="sign up" id="register">
-        <span id="msg"></span>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Recomendações do YouTube - Login</title>
+    <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+    <style>
+        /* Um estilo simples só para deixar o botão de voltar mais visível */
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background-color: #111;
+            color: white;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 12px;
+        }
+        input[type="text"],
+        input[type="password"] {
+            padding: 8px;
+            border-radius: 6px;
+            border: none;
+            width: 250px;
+            font-size: 1rem;
+        }
+        input[type="button"] {
+            padding: 10px 18px;
+            border-radius: 6px;
+            border: none;
+            background-color: #4caf50;
+            color: white;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+        input[type="button"]:hover {
+            background-color: #45a049;
+        }
+        #back {
+            align-self: flex-start;
+            background-color: #222;
+            font-size: 1.3rem;
+            width: 50px;
+        }
+        #back:hover {
+            background-color: #555;
+        }
+        #msg {
+            color: #ff6666;
+            min-height: 20px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <input type="button" id="back" value="&lt;" title="Voltar" />
+    
+    <input type="text" id="username" placeholder="Usuário" />
+    <input type="password" id="password" placeholder="Senha" />
+    
+    <input type="button" value="Cadastrar" id="register" />
+    
+    <span id="msg"></span>
 
-        <script>
-            register_button = document.getElementById('register')
-            function show_message(status){
-                document.getElementById("msg")
-                if(status){
-                    return msg.innerHTML = "usuario ja existe"
-                }
-                return msg.innerHTML = ""
+    <script>
+        const back = document.getElementById('back');
+        const registerButton = document.getElementById('register');
+        const msg = document.getElementById('msg');
+
+        // Função para voltar para a página anterior (login)
+        back.addEventListener('click', () => {
+            window.location.href = "../";  // Ajuste o caminho conforme necessário
+        });
+
+        // Mostrar mensagem de erro ou limpar
+        function showMessage(error) {
+            if (error) {
+                msg.textContent = "Usuário já existe ou erro no cadastro.";
+            } else {
+                msg.textContent = "";
+            }
+        }
+
+        // Evento do botão cadastrar
+        registerButton.addEventListener('click', () => {
+            const username = document.getElementById('username').value.trim();
+            const password = document.getElementById('password').value.trim();
+
+            // Validação simples
+            if (!username || !password) {
+                showMessage(true);
+                msg.textContent = "Por favor, preencha usuário e senha.";
+                return;
             }
 
-
-            register_button.addEventListener('click', () => {
-                username = document.getElementById('username').value
-                password = document.getElementById('password').value
-                fetch('http://192.168.5.102:5000/register', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    credentials: 'include',
-                    body: JSON.stringify({
-                        usuario: username,
-                        senha: password
-                    })
-                    }).then(response => response.json()).then( (data) => {
-                        if(data.status == false){
-                            show_message(true)
-                        }
-                        else{
-                            show_message(false)
-                            window.location.href = "../"
-                        }
-                    })
+            fetch('http://192.168.5.102:5000/register', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                credentials: 'include',
+                body: JSON.stringify({
+                    usuario: username,
+                    senha: password
                 })
-        </script>
-    </body>
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === false) {
+                    showMessage(true);
+                } else {
+                    showMessage(false);
+                    localStorage.setItem('token', data.token);
+                    window.location.href = "../";  // Redireciona após sucesso
+                }
+            })
+            .catch(err => {
+                showMessage(true);
+                console.error("Erro no fetch:", err);
+            });
+        });
+    </script>
+</body>
 </html>

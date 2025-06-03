@@ -1,4 +1,4 @@
-from flask import Flask, request, render_template, jsonify, send_from_directory, session
+from flask import Flask, redirect, url_for, request, render_template, jsonify, send_from_directory, session
 from flask_socketio import SocketIO, emit, join_room
 import eventlet
 import json
@@ -9,6 +9,8 @@ app = Flask(__name__)
 socketio = SocketIO(app, cors_allowed_origins="*", async_mode="eventlet", manage_session=True)
 app.secret_key = "secrete_key"
 
+ws_cache = {}
+
 #client side
 @app.route('/')
 def home():
@@ -17,6 +19,10 @@ def home():
         status, msg = database.run_db_operation(database.get_user_from_token, token=session.get('user_id'))
         username, password = status[1], status[2]
         return render_perfil()
+    return render_template('login.html')
+
+@app.route('/login_page')
+def login_page():
     return render_template('login.html')
 
 @app.route('/login', methods=['POST'])
@@ -36,6 +42,11 @@ def register():
     username = data['usuario']
     password = data['senha']
     return register_handler(username, password)
+
+@app.route('/request_logout')
+def request_logout():
+    session.clear()
+    return redirect(url_for('login_page'))
 
 def render_perfil():
     return render_template('perfil.html')
@@ -58,12 +69,18 @@ def register_handler(username, password):
 #event handler
 @socketio.on("connect")
 def handle_connect():
-    handle_room_client()
+    print(f'usuario {request.sid} conectado ao servidor')
 
 @socketio.on('login_websocket')
 def handle_login_websocket(msg):
     user_id = msg['token']
-    join_room(user_id)
+    status, msg = database.run_db_operation(database.check_token_existence, token=user_id)
+    if status:
+        ws_cache[request.sid] = user_id
+        print(ws_cache)
+        join_room(user_id)
+    else:
+        print('token inject') #emit de erro de auth (meelhoria futura)
         
 @socketio.on('post_recommendations')
 def post_recommendations(msg):
@@ -72,13 +89,14 @@ def post_recommendations(msg):
     ytrecommendations = create_dict(ytrecommendations_array)
 
     if ytrecommendations:
-        user_id = msg['token']
+        user_id = ws_cache.get(request.sid)
         msg = database.run_db_operation(database.update_recommendations, token=user_id, recommendations=json.dumps(ytrecommendations))
     socketio.emit('new_recommendations', {"recommendations": ytrecommendations}, to=user_id)
 
 @socketio.on('get_recommendations')
 def get_recommendations():
-    user_id = session.get('user_id')
+    user_id = ws_cache.get(request.sid)
+    print(ws_cache, user_id, request.sid)
     status, msg = database.run_db_operation(database.get_user_from_token, token=user_id)
     try:
         recommendations = json.loads(status[6])
@@ -88,35 +106,35 @@ def get_recommendations():
         
 @socketio.on('next')
 def handle_next(): #web_client
-    user_id = session.get('user_id')
+    user_id = ws_cache.get(request.sid)
     socketio.emit("send_next", to=user_id)
 
 @socketio.on('pause')
 def handle_pause(): #web_client
-    user_id = session.get('user_id')
+    user_id = ws_cache.get(request.sid)
     socketio.emit('emit_pause', to=user_id)
 
 @socketio.on('get_video_from_client')
 def get_video(message): #web_client
-    user_id = session.get('user_id')
+    user_id = ws_cache.get(request.sid)
     socketio.emit('change_video', {"url": message['url']}, to=user_id)
 
 @socketio.on('new_volume')
 def new_volume(message): #web_client
     volume = int(message["volume"])
-    user_id = session.get('user_id')
+    user_id = ws_cache.get(request.sid)
     msg = database.run_db_operation(database.update_volume, volume=volume, token=user_id)
     socketio.emit('change_volume', {"volume": volume}, to=user_id)
     print(msg)
     
 @socketio.on('emit_volume_to_client')
 def emit_volume_to_client(): #web client
-    user_id = session.get('user_id')
+    user_id = ws_cache.get(request.sid)
     socketio.emit('get_volume', to=user_id)
 
 @socketio.on('recive_volume')
 def recive_volume(msg):
-    user_id = msg['token']
+    user_id = ws_cache.get(request.sid)
     volume = int(msg['volume'])
     msg = database.run_db_operation(database.update_volume, volume=volume, token=user_id)
     socketio.emit('sync_volume', {"volume": str(volume)}, to=user_id)
@@ -128,11 +146,6 @@ def create_dict(ytrecommendations_array):
         ytrecommendations[i["titulo"]] = {'url': i['link'], 'thumb': i['thumb']}
     return ytrecommendations
 
-def handle_room_client():
-    status, msg = auth.check_token(session)
-    if status:
-        user_id = session.get('user_id')
-        join_room(user_id)
 
 if __name__ == "__main__":
     socketio.run(app, host='0.0.0.0', port=5000)

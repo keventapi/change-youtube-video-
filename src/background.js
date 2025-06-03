@@ -123,16 +123,22 @@ function change_volume(new_volume){
 const ip = "192.168.5.102"
 const socket = io(`http://${ip}:5000`, { transports: ["websocket"] });
 
-
+let is_logged = false
 
 socket.on('connect', () => {
   console.log('Conectado ao WebSocket');
   chrome.storage.local.get('token', (data) => {
   if(data.token){
     socket.emit("login_websocket", {token: data.token})
+    is_logged = true
   }
   })
 });
+
+socket.on('disconnect', () => {
+  is_logged = false
+})
+
 
 socket.on('connect_error', (err) => {
   console.error('Erro de conexão:', err);
