@@ -37,17 +37,17 @@ def get_user(cursor, connect, username, password):
     cursor.execute("SELECT * FROM users WHERE user = ? AND password = ?", (username, password,))
     user_data = cursor.fetchone()
     if user_data:
-        return user_data, "dado do usuario pego com sucesso"
+        return True, data_as_dict(user_data)
     else:
-        return None, "usuario ou senha não validos"
+        return False, None
 
 def get_user_from_token(cursor, connect, token):
     cursor.execute("SELECT * FROM users WHERE token = ?", (token,))
     user_data = cursor.fetchone()
     if user_data:
-        return user_data, "dado do usuario pego com sucesso"
+        return True, data_as_dict(user_data)
     else:
-        return None, "usuario ou senha não validos"
+        return False, None
 
 def check_token_existence(cursor, connect, token):
     cursor.execute("SELECT 1 FROM users WHERE token = ?",(token,))
@@ -97,5 +97,8 @@ def update_volume(cursor, connect, token, volume):
         connect.commit()
         return "volume atualizado com sucesso"
     return "erro ao atualizar volume, token invalido"
+
+def data_as_dict(data):
+    return {'id': data[0], 'username': data[1], 'password': data[2], 'token': data[3], 'url': data[4], "volume": data[5], 'recommendations': data[6]}
 
 run_db_operation(create_table)

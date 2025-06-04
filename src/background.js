@@ -1,7 +1,5 @@
 import { io } from "socket.io-client"
 
-// TODO: Refatorar usando padrão when_on_youtube(callback) para evitar repetição e isolar lógica de verificação de URL do YouTube
-
 let MAX_ATTEMPTS = {};
 
 function attempt_emit_recommendations(tabId, scroll=false){

@@ -18,6 +18,7 @@ chrome.storage.local.get('token', (data) => {
       margin-top: 20px;
       display: flex;
       flex-direction: column;
+      size: 20px;
       gap: 10px;
     }
     input[type="text"], input[type="password"] {
@@ -27,7 +28,9 @@ chrome.storage.local.get('token', (data) => {
       font-size: 1rem;
       width: 100%;
       box-sizing: border-box;
+      height: 38px;
     }
+
     input[type="button"] {
       padding: 10px 0;
       border-radius: 6px;
@@ -148,6 +151,7 @@ chrome.storage.local.get('token', (data) => {
             logged_body();
           } else {
             wrong_credentials.innerText = "Usuário ou senha incorretos.";
+            console.log(res.msg)
           }
         })
         .catch(error => {

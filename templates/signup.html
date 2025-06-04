@@ -75,9 +75,9 @@
         });
 
         // Mostrar mensagem de erro ou limpar
-        function showMessage(error) {
+        function showMessage(error, msg) {
             if (error) {
-                msg.textContent = "Usuário já existe ou erro no cadastro.";
+                msg.textContent = msg;
             } else {
                 msg.textContent = "";
             }
@@ -108,12 +108,13 @@
             })
             .then(response => response.json())
             .then(data => {
+                console.log(data.msg)
                 if (data.status === false) {
-                    showMessage(true);
+                    showMessage(true, data.msg);
                 } else {
-                    showMessage(false);
+                    showMessage(false, data.msg);
                     localStorage.setItem('token', data.token);
-                    window.location.href = "../";  // Redireciona após sucesso
+                    window.location.href = "../";
                 }
             })
             .catch(err => {
