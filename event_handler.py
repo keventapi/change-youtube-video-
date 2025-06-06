@@ -1,10 +1,13 @@
 from flask_socketio import emit, join_room
+from flask import request
 import database
+from functools import wraps
 import json
 
 ws_cache = {}
-def start_event_handler(socketio, request):
-    def login_required(f):
+def start_event_handler(socketio):
+    def socket_login_required(f):
+        @wraps(f)
         def wrapper(*args, **kwargs):
             user_id = ws_cache.get(request.sid)
             if not user_id:
@@ -35,7 +38,7 @@ def start_event_handler(socketio, request):
                 print('token inject') #emit de erro de auth (meelhoria futura)
             
     @socketio.on('post_recommendations')
-    @login_required
+    @socket_login_required
     def post_recommendations(msg):
         ytrecommendations = {}
         ytrecommendations_array = msg.get('recommendations')
@@ -47,7 +50,7 @@ def start_event_handler(socketio, request):
         socketio.emit('new_recommendations', {"recommendations": ytrecommendations}, to=user_id)
 
     @socketio.on('get_recommendations')
-    @login_required
+    @socket_login_required
     def get_recommendations():
         user_id = ws_cache.get(request.sid)
         status, data = database.run_db_operation(database.get_user_from_token, token=user_id)
@@ -57,27 +60,26 @@ def start_event_handler(socketio, request):
                 recommendations_json = json.loads(recommendations)
                 socketio.emit('new_recommendations', {"recommendations": recommendations_json}, to=user_id)
 
-            
     @socketio.on('next')
-    @login_required
+    @socket_login_required
     def handle_next(): #web_client
         user_id = ws_cache.get(request.sid)
         socketio.emit("send_next", to=user_id)
 
     @socketio.on('pause')
-    @login_required
+    @socket_login_required
     def handle_pause(): #web_client
         user_id = ws_cache.get(request.sid)
         socketio.emit('emit_pause', to=user_id)
 
     @socketio.on('get_video_from_client')
-    @login_required
+    @socket_login_required
     def get_video(message): #web_client
         user_id = ws_cache.get(request.sid)
         socketio.emit('change_video', {"url": message['url']}, to=user_id)
 
     @socketio.on('new_volume')
-    @login_required
+    @socket_login_required
     def new_volume(message): #web_client
         volume = message.get('volume')
         if volume:
@@ -90,13 +92,13 @@ def start_event_handler(socketio, request):
                 print('error no evento new_volume, tipo do erro: ', e)
         
     @socketio.on('emit_volume_to_client')
-    @login_required
+    @socket_login_required
     def emit_volume_to_client(): #web client
         user_id = ws_cache.get(request.sid)
         socketio.emit('get_volume', to=user_id)
 
     @socketio.on('recive_volume')
-    @login_required
+    @socket_login_required
     def recive_volume(msg):
         user_id = ws_cache.get(request.sid)      
         volume = msg.get('volume')
