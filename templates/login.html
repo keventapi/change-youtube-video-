@@ -65,8 +65,8 @@
             user-select: none;
         }
 
-        input[type="button"]:hover {
-            background-color: #4caf50;
+        input[type="button"]:active{
+            background-color: rgb(76, 175, 79);
         }
 
         #msg {
@@ -92,13 +92,13 @@
     </style>
 </head>
 <body>
-    <form id="login-form" onsubmit="return false;">
+    <div id="login-form">
         <input type="text" id="username" placeholder="Usuário" autocomplete="username" />
         <input type="password" id="password" placeholder="Senha" autocomplete="current-password" />
         <input type="button" value="Login" id="login" />
         <input type="button" value="Sign Up" id="register" />
         <span id="msg"></span>
-    </form>
+    </div>
 
     <script>
         const login_button = document.getElementById('login');

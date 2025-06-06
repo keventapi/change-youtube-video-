@@ -69,8 +69,8 @@
         user-select: none;
     }
 
-    input[type="submit"]:hover,
-    input[type="button"]:hover {
+    input[type="submit"]:active,
+    input[type="button"]:active {
         background-color: #4caf50;
     }
 
@@ -89,7 +89,7 @@
         appearance: none;
     }
 
-    #volume:hover {
+    #volume:active {
         background: linear-gradient(to right, #0d47a1 50%, #555 50%);
     }
 
@@ -170,7 +170,7 @@
         transition: background-color 0.3s ease, border-color 0.3s ease;
     }
 
-    .container:hover {
+    .container:active {
         background-color: rgba(76, 175, 80, 0.15);
         border-color: #4caf50;
     }
@@ -194,9 +194,9 @@
         transition: background-color 0.3s ease;
     }
 
-    .container input[type="button"]:hover {
-        background-color: #4caf50;
-    }
+    .container input[type="button"]:active{
+            background-color: rgb(76, 175, 79);
+        }
 
     /* Responsividade simples */
     @media (max-width: 650px) {
@@ -270,7 +270,11 @@
                         button.addEventListener('click', () =>{
                             let video_url = conteudo[key]['url']
                             let input = document.getElementById('youtube_url')
-                            window.scrollTo(0, 0)
+                            window.scrollTo({
+                                top: 0,
+                                left: 0,
+                                behavior: 'smooth'
+                            });
                             socket.emit('get_video_from_client', {url: video_url})
                         })
                         div = document.getElementById('recomendacoes')
@@ -404,6 +408,3 @@
     </script>
 </body>
 </html>
-
-
-
