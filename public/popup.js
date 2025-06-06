@@ -4,67 +4,107 @@ chrome.storage.local.get('token', (data) => {
   // Injetar estilo básico para inputs, botões e mensagens
   const style = document.createElement('style');
   style.textContent = `
-    body{
-      background-color: #111;
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
     }
-    #login, #status {
-      font-family: Arial, sans-serif;
-      color: white;
-      background-color: #111;
-      padding: 16px;
-      border-radius: 8px;
-      width: 280px;
-      margin: auto;
-      margin-top: 20px;
-      display: flex;
-      flex-direction: column;
-      size: 20px;
-      gap: 10px;
+
+    body {
+        background-color: black;
+        color: white;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        height: 100vh;
+        width: 100vw;
+        padding: 10px;
+        overflow: hidden;
     }
-    input[type="text"], input[type="password"] {
-      padding: 8px;
-      border-radius: 6px;
-      border: none;
-      font-size: 1rem;
-      width: 100%;
-      box-sizing: border-box;
-      height: 38px;
+
+    #login-form {
+        background: rgba(255, 255, 255, 0.05);
+        padding: 20px;
+        border-radius: 12px;
+        box-shadow: 0 0 10px rgba(255, 255, 255, 0.1);
+        width: 100%;
+        max-width: 300px;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+    }
+
+    input[type="text"],
+    input[type="password"] {
+        padding: 8px 12px;
+        font-size: 0.95rem;
+        border-radius: 8px;
+        border: none;
+        background-color: #222;
+        color: white;
+        outline-offset: 2px;
+        transition: outline-color 0.3s ease;
+    }
+
+    input[type="text"]:focus,
+    input[type="password"]:focus {
+        outline: 2px solid #4caf50;
     }
 
     input[type="button"] {
-      padding: 10px 0;
-      border-radius: 6px;
-      border: none;
-      background-color: #4caf50;
-      color: white;
-      font-weight: 600;
-      cursor: pointer;
-      font-size: 1rem;
-      transition: background-color 0.3s ease;
+        padding: 10px;
+        background-color: #333;
+        border: none;
+        border-radius: 8px;
+        color: white;
+        font-weight: 600;
+        cursor: pointer;
+        transition: background-color 0.3s ease;
+        user-select: none;
+        font-size: 0.95rem;
     }
-    input[type="button"]:hover {
-      background-color: #45a049;
+
+    input[type="button"]:active {
+        background-color: rgb(76, 175, 79);
     }
+
+    #msg {
+        color: #f44336;
+        font-weight: 600;
+        text-align: center;
+        min-height: 1.2em;
+        font-size: 0.85rem;
+        user-select: none;
+    }
+
     #back {
-      background-color: #222;
-      width: 40px;
-      font-size: 1.2rem;
-      font-weight: bold;
-      align-self: flex-start;
+        position: absolute;
+        top: 10px;
+        left: 10px;
+        padding: 6px 10px;
+        font-size: 1rem;
+        background-color: #222;
+        border: none;
+        border-radius: 6px;
+        color: white;
+        cursor: pointer;
+        transition: background-color 0.3s ease;
     }
-    #back:hover {
-      background-color: #555;
-    }
-    #auth {
-      color: #ff6666;
-      font-weight: bold;
-      min-height: 20px;
+
+    #back:active {
+        background-color: rgb(76, 175, 79);
     }
     p {
-      margin: 0 0 10px 0;
-      font-weight: bold;
+      font-size: 0.9rem;
+      color: #4caf50;
+      font-weight: 600;
+      text-align: center;
+      margin-top: 10px;
+      user-select: none;
     }
-  `;
+`;
   document.head.appendChild(style);
 
   function logged_body() {
@@ -76,8 +116,9 @@ chrome.storage.local.get('token', (data) => {
       }
     });
 
-    let logged = document.getElementById('login');
-    logged.innerHTML = "<p>Usuário logado!</p>";
+    let logged = document.getElementById('login-form');
+    logged.innerHTML = ""
+    logged.innerHTML = "<p>Usuário logado</p>";
 
     let logout = document.createElement('input');
     logout.type = "button";
@@ -94,11 +135,12 @@ chrome.storage.local.get('token', (data) => {
   }
 
   function unlogged_body() {
-    let login_div = document.getElementById('login');
-    login_div.innerHTML = ''; // Limpar antes de criar
+    let login_div = document.getElementById('login-form');
+    login_div.innerHTML = '';
 
     let username_tag = document.createElement('input');
     username_tag.id = "username";
+    username_tag.type = "text";
     username_tag.placeholder = "Usuário";
 
     let password_tag = document.createElement('input');
@@ -107,12 +149,12 @@ chrome.storage.local.get('token', (data) => {
     password_tag.type = "password";
 
     let submit = document.createElement('input');
-    submit.id = "submit";
+    submit.id = "login";
     submit.value = "Login";
     submit.type = "button";
 
     let signup = document.createElement('input');
-    signup.id = "signup";
+    signup.id = "register";
     signup.value = "Cadastrar";
     signup.type = "button";
 
@@ -167,7 +209,7 @@ chrome.storage.local.get('token', (data) => {
   }
 
   function signup_page() {
-    let login_div = document.getElementById('login');
+    let login_div = document.getElementById('login-form');
     login_div.innerHTML = ''; // limpar antes
 
     let back = document.createElement('input');
@@ -177,6 +219,7 @@ chrome.storage.local.get('token', (data) => {
     
     let username_tag = document.createElement('input');
     username_tag.id = "username";
+    username_tag.type = "text";
     username_tag.placeholder = "Usuário";
 
     let password_tag = document.createElement('input');

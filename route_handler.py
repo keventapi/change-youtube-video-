@@ -40,7 +40,6 @@ def start_route_handler(app):
         return render_template('login.html')
         
     @app.route('/login', methods=['POST'])
-    @route_unloged_required
     def login():
         data = request.get_json()
         username = data.get('usuario')
@@ -48,7 +47,6 @@ def start_route_handler(app):
         return login_handler(username, password)
 
     @app.route('/signup')
-    @route_unloged_required
     def signup():
         return render_template("signup.html")
         
