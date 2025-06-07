@@ -210,7 +210,7 @@ chrome.storage.local.get('token', (data) => {
 
   function signup_page() {
     let login_div = document.getElementById('login-form');
-    login_div.innerHTML = ''; // limpar antes
+    login_div.innerHTML = '';
 
     let back = document.createElement('input');
     back.id = "back";
@@ -283,6 +283,8 @@ chrome.storage.local.get('token', (data) => {
   if (data.token) {
     logged_body();
   } else {
-    unlogged_body();
+    fetch(`http://${ip}:5000/request_logout`).then(res = res.json()).then(response => {
+      unlogged_body();
+    })
   }
 });

@@ -40,6 +40,7 @@ def start_route_handler(app):
         return render_template('login.html')
         
     @app.route('/login', methods=['POST'])
+    @route_unloged_required
     def login():
         data = request.get_json()
         username = data.get('usuario')
@@ -47,6 +48,7 @@ def start_route_handler(app):
         return login_handler(username, password)
 
     @app.route('/signup')
+    @route_unloged_required
     def signup():
         return render_template("signup.html")
         
@@ -83,26 +85,30 @@ def credentials_handler(username, password):
 
 def login_handler(username, password):
     if not isinstance(username, str) or not isinstance(password, str):
-        return jsonify({"status": False, "msg": "os campos tem que ser string", "token": False})
+        return jsonify({"status": False, "msg": "os campos tem que ser string", "token": False}), 400
     username = username.lower()
     status, data = database.run_db_operation(database.get_user, username=username, password=password)
     if status:
         token = data.get('token')
         if token:
             session['user_id'] = token
-            return jsonify({"status": True, "msg": "login efetuado", "token": data['token']})
-    return jsonify({"status": False, "msg": "erro ao efetuar login, usuario ou senha invalidos", "token": False})
+            return jsonify({"status": True, "msg": "login efetuado", "token": data['token']}), 200
+    return jsonify({"status": False, "msg": "erro ao efetuar login, usuario ou senha invalidos", "token": False}), 400
 
 def register_handler(username, password):
     if not isinstance(username, str) or not isinstance(password, str):
-        return jsonify({"status": False, "msg": "os campos tem que ser string", "token": False})
+        return jsonify({"status": False, "msg": "os campos tem que ser string", "token": False}), 400
     username = username.lower()
     credential_status, credential_msg = credentials_handler(username, password)
     if credential_status == False:
-        return jsonify({"status": False, "msg": credential_msg})
+        return jsonify({"status": False, "msg": credential_msg}), 400
         
     status, msg = database.run_db_operation(database.add_user, username=username, password=password)
     if status == True:
-            login_response = login_handler(username, password)
-            return login_response
-    return jsonify({"status": False, "msg": "usuario ja existe"})
+        login_response = login_handler(username, password)
+        if login_response[1] == 200:
+            login_data = login_response[0].get_json()
+            return jsonify(login_data), 201
+        else:
+            return jsonify({"status": False, "msg": "erro ao efetuar login automatico, mas criação de usuario foi feita"}), 201
+    return jsonify({"status": False, "msg": "usuario ja existe"}), 400
