@@ -9,7 +9,10 @@ def start_route_handler(app):
         def route_login_required_wrapper(*args, **kwargs):
             user_id = session.get('user_id')
             if user_id:
-                return f(*args, **kwargs)
+                status, data = database.run_db_operation(database.get_user_from_token, token=user_id)
+                if status and data is not None:
+                    return f(*args, **kwargs)
+                return redirect(url_for('login_page'))
             else:
                 return redirect(url_for('login_page'))
         return route_login_required_wrapper

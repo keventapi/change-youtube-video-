@@ -4,6 +4,9 @@ import uuid
 def run_db_operation(callback, **kwargs):
     with sqlite3.connect('mydb.db') as connect:
         cursor = connect.cursor()
+        username = kwargs.get('username')
+        if username:
+            kwargs['username'] = username.lower()
         return callback(cursor, connect, **kwargs)
 
 def create_table(cursor, connect):
@@ -66,7 +69,7 @@ def create_token(cursor, connect):
 def delete_account(cursor, connect, username, password):
     cursor.execute("DELETE FROM users WHERE user = ? AND password = ?", (username, password))
     connect.commit()
-    return "conta removida"
+    return True, "conta removida"
 
 def edit_account(cursor, connect, username, password, new_username):
     cursor.execute("SELECT 1 FROM users WHERE user = ? AND password = ?", (username, password,))
@@ -75,28 +78,28 @@ def edit_account(cursor, connect, username, password, new_username):
         if value == False:
             cursor.execute("UPDATE users set user = ? WHERE user = ? AND password = ?", (new_username, username, password))
             connect.commit()
-            return f"usuario mudado para {new_username}"
+            return True, f"usuario mudado para {new_username}"
         else:
-            return f"o nome de usauario: {new_username} ja esta sendo usado"
+            return False, f"o nome de usauario: {new_username} ja esta sendo usado"
     else:
-        return "usuario ou senha errado"
+        return True, "usuario ou senha errado"
      
 def update_recommendations(cursor, connect, token, recommendations):
     cursor.execute("SELECT 1 FROM users WHERE token = ?", (token,))
     if cursor.fetchone():
         cursor.execute("UPDATE users set recommendations = ? WHERE token = ?", (recommendations, token,))
         connect.commit()
-        return f"playlist atualizada com sucesso"
+        return True, f"playlist atualizada com sucesso"
     else:
-        return "erro ao atualizar a playlist, session token nn existe"
+        return False, "erro ao atualizar a playlist, session token nn existe"
 
 def update_volume(cursor, connect, token, volume):
     cursor.execute("SELECT 1 FROM users WHERE token = ?", (token,))
     if cursor.fetchone():
         cursor.execute("UPDATE users set volume = ? WHERE token = ?", (volume, token,))
         connect.commit()
-        return "volume atualizado com sucesso"
-    return "erro ao atualizar volume, token invalido"
+        return True, "volume atualizado com sucesso"
+    return False, "erro ao atualizar volume, token invalido"
 
 def data_as_dict(data):
     return {'id': data[0], 'username': data[1], 'password': data[2], 'token': data[3], 'url': data[4], "volume": data[5], 'recommendations': data[6]}

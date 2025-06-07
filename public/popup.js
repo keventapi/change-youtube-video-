@@ -283,7 +283,7 @@ chrome.storage.local.get('token', (data) => {
   if (data.token) {
     logged_body();
   } else {
-    fetch(`http://${ip}:5000/request_logout`).then(res = res.json()).then(response => {
+    fetch(`http://${ip}:5000/request_logout`).then(res => res).then(response => {
       unlogged_body();
     })
   }
