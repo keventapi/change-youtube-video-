@@ -19,4 +19,4 @@ def is_black_listed(sid, limit):
         return False
     
     attempts = int(r.get(sid))
-    return attempts > sid
+    return attempts > limit

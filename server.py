@@ -3,19 +3,16 @@ from flask_socketio import SocketIO, emit, join_room
 import event_handler
 import route_handler
 
-def create_app_flask():
-    app = Flask(__name__)
-    app.secret_key = "secret_key"
-    route_handler.start_route_handler(app)
-    return app
 
-def create_app_socket(app):
-    socketio = SocketIO(app, cors_allowed_origins="*", async_mode="eventlet", manage_session=True)
-    event_handler.start_event_handler(socketio)
-    return socketio
+app = Flask(__name__)
+app.secret_key = "secret_key"
+route_handler.start_route_handler(app)
 
-app = create_app_flask()
-socketio = create_app_socket(app) 
+
+
+socketio = SocketIO(app, cors_allowed_origins="*", async_mode="eventlet", manage_session=True)
+event_handler.start_event_handler(socketio)
+
 
 
 if __name__ == "__main__":
