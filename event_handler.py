@@ -5,6 +5,7 @@ from functools import wraps
 import json
 import html
 import cache
+from utilites import data_sanitization
 
 ws_cache = {}
 def start_event_handler(socketio):
@@ -131,7 +132,9 @@ def start_event_handler(socketio):
             except Exception as e:
                 print('erro no recive_volume, identificado do erro: ', e) #futuro log
                 socketio.emit('error', {"status": False, "msg": "erro ao registrar volume, entrada invalida, tenha certeza de não tentar enviar dados invalidos ao servidor"}, to=user_id)
-                         
+
+
+               
 def is_an_allowed_url(url):
     if url is None:
         return False

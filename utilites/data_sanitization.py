@@ -3,6 +3,29 @@ import html
 class RecommendationsSanitizer:
     allowed = ("https://i.ytimg.com/", "https://img.youtube.com/", "https://www.youtube.com/", "https://youtu.be/")
     MAXATTEMPTS = 20
+    
+    @classmethod
+    def set_max_attempts(cls, attempts):
+        """seta a quantidade de tentativas maximas
+
+        Args:
+            attempts (int): quantidade de itens que podem ser processados.
+        """
+        if cls.check_max_attempts(attempts):
+            cls.MAXATTEMPTS = attempts
+    
+    @classmethod
+    def check_max_attempts(cls, attempts):
+        """checa se o valor de attempt é inteiro
+
+        Args:
+            attempts (int): quantidade de itens que podem ser processados.
+        """
+        if attempts:
+            if isinstance(attempts, int):
+                return True
+        return False
+    
     @classmethod
     def set_allowed(cls, new_allowed):
         """seta um novo allowed caso ele seja valido
