@@ -1,22 +1,131 @@
 import redis
-r = redis.Redis(host='localhost', port=6379, db=0)
+import logging
+from functools import wraps
+import traceback
 
+def start_required(f):
+    @wraps(f)
+    def wrapped(*args, **kwargs):
+        self = args[0]
+        if self.r is None:
+            raise RuntimeError('redis não foi iniciado, use .start() para iniciar o redis antes de chamar esse metodo')
+        return f(*args, **kwargs)
+    return wrapped
 
-def set_login_rate_limit(sid, limit, time_stamp):
-    if not r.exists(sid):
-        r.set(sid, 1)
-        r.expire(sid, time_stamp)
-    else:
-        r.incr(sid)
+class CacheHandler:
+    def __init__(self, limit, time_stamp, expire_limit=3600, event_expire_time=0.5, host="localhost", port=6379):
+        try:
+            if self.check_redis_parameters(host, port) and self.check_initial_parameters(limit, time_stamp, expire_limit, event_expire_time):
+                self.r = None
+                self.host = host
+                self.port = port
+                self.limit = limit
+                self.time_stamp = time_stamp
+                self.expire_limit = expire_limit
+                self.event_expire_time = event_expire_time
+            else:
+                raise Exception(f'os parametros fornecidos são invalidos, o cache não pode ser executado')
+        except Exception as e:
+            logging.error(f'erro ao iniciar o redis no cache, identificador do erro: {e} \n{traceback.format_exc()}')
+
+    def start(self):
+        try:
+            self.r = redis.Redis(host=self.host, port=self.port, db=0)
+            self.r.ping()
+        except Exception as e:
+            logging.error(f'erro ao iniciar o redis no cache, identificador do erro: {e} \n{traceback.format_exc()}')
+            self.r = None
     
-    attempts = int(r.get(sid))
-    if attempts > limit:
-        r.expire(sid, time_stamp*(attempts - limit))
-
-def is_black_listed(sid, limit):
-    attempts_byte = r.get(sid)
-    if attempts_byte is None:
+    @staticmethod
+    def check_redis_parameters(host, port):
+        if host and port:
+            if isinstance(host, str) and isinstance(port, int):
+                return True
         return False
     
-    attempts = int(r.get(sid))
-    return attempts > limit
+    @staticmethod
+    def check_initial_parameters(limit, time_stamp, expire_limit, event_expire_time):
+        if limit is not None and time_stamp is not None and expire_limit is not None and event_expire_time is not None:
+            if isinstance(limit, int) and isinstance(time_stamp, int) and isinstance(expire_limit, int) and isinstance(event_expire_time, float):
+                if limit >= 0 and time_stamp >= 0 and expire_limit >= 0 and event_expire_time >= 0:
+                    return True
+        return False
+    
+    @start_required
+    def set_login_rate_limit(self, sid):
+        try:
+            key = f"black_list:{sid}"
+            if not self.r.exists(key):
+                self.r.set(key, 1)
+                self.r.expire(key, self.time_stamp)
+            else:
+                self.r.incr(key)
+            
+            attempts = int(self.r.get(key))
+            if attempts > self.limit:
+                expire_time = min(self.time_stamp * (attempts - self.limit), self.expire_limit)
+                self.r.expire(key, expire_time)
+        except Exception as e:
+            logging.error(f'erro ao definir o login rate, identificador do erro: {e} \n{traceback.format_exc()}')
+            
+    @start_required
+    def is_black_listed(self, sid):
+        try:
+            key = f"black_list:{sid}"
+            attempts_byte = self.r.get(key)
+            if attempts_byte is None:
+                return False
+            
+            attempts = int(attempts_byte)
+            return attempts > self.limit
+        except Exception as e:
+            logging.error(f'erro ao checar se o usuario esta no blacklist, identificador do erro: {e} \n{traceback.format_exc()}')
+            return False
+    
+    @start_required
+    def ws_cache_login(self, sid, token):
+        try:
+            key = f'login:{sid}'
+            self.r.set(key, token)
+            return True
+        except Exception as e:
+            logging.error(f'erro no cache_websocket de sessões identificador do erro: {e} \n{traceback.format_exc()}')
+            return False
+        
+    @start_required
+    def ws_cache_get_user(self, sid):
+        try:
+            key = f'login:{sid}'
+            token_byte = self.r.get(key)
+            if token_byte is None:
+                return None
+            return token_byte.decode('utf-8')
+        except Exception as e:
+            logging.error(f'erro ao buscar token de usuario: {e} \n{traceback.format_exc()}')
+            return None
+
+    @start_required
+    def ws_event_throttle(self, sid, event_name):
+        try:
+            key = f'{event_name}:{sid}'
+            if not self.r.exists(key):
+                self.r.set(key, 1, ex=self.event_expire_time)
+                return True
+            return False
+        except Exception as e:
+            logging.error(f'erro ao aplicar o throttle do evento: {e} \n{traceback.format_exc()}')
+            return False
+
+
+    @start_required
+    def ws_cache_logout(self, sid):
+        try:
+            key = f'login:{sid}'
+            token = self.r.get(key)
+            if token is not None:
+                self.r.delete(key)
+                return token.decode('utf-8')
+            return None            
+        except Exception as e:
+            logging.error(f'erro ao apagar e buscar o token de usuario: {e} \n{traceback.format_exc()}')
+            return None

@@ -1,29 +1,28 @@
 import html
-
+import logging
 class RecommendationsSanitizer:
     allowed = ("https://i.ytimg.com/", "https://img.youtube.com/", "https://www.youtube.com/", "https://youtu.be/")
-    MAXATTEMPTS = 20
+    DATALIMIT = 20
     
     @classmethod
-    def set_max_attempts(cls, attempts):
+    def set_data_limit(cls, limit):
         """seta a quantidade de tentativas maximas
 
         Args:
-            attempts (int): quantidade de itens que podem ser processados.
+            limit (int): quantidade de itens que podem ser processados.
         """
-        if cls.check_max_attempts(attempts):
-            cls.MAXATTEMPTS = attempts
+        if cls.check_data_limit(limit):
+            cls.DATALIMIT = limit
     
     @classmethod
-    def check_max_attempts(cls, attempts):
-        """checa se o valor de attempt é inteiro
+    def check_data_limit(cls, limit):
+        """checa se o valor de limit é inteiro
 
         Args:
-            attempts (int): quantidade de itens que podem ser processados.
+            limit (int): quantidade de itens que podem ser processados.
         """
-        if attempts:
-            if isinstance(attempts, int):
-                return True
+        if limit is not None:
+            return isinstance(limit, int)
         return False
     
     @classmethod
@@ -78,6 +77,7 @@ class RecommendationsSanitizer:
             string: o titulo escapado para evitas XSS.
         """
         return html.escape(title) if isinstance(title, str) else None
+    
     @classmethod
     def build_recommendation_entry(cls, entry):
         """cria a estrutura de daods que sera usada no create_dict
@@ -107,7 +107,7 @@ class RecommendationsSanitizer:
         """
         if isinstance(ytrecommendations_array, list) and len(ytrecommendations_array) > 0:
             try:
-                limit = cls.MAXATTEMPTS
+                limit = cls.DATALIMIT
                 ytrecommendations = {}
                 for i in ytrecommendations_array:
                     if limit == 0:
@@ -118,6 +118,7 @@ class RecommendationsSanitizer:
                     limit -= 1
                 return ytrecommendations
             except Exception as e:
+                logging.error(f'erro no create_dict, especificação do erro: {e}')
                 return {}
         else:
             return {}

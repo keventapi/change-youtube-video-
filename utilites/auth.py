@@ -3,28 +3,18 @@ from flask import jsonify
 import logging
 
 class AuthValidation:
-    def __init__(self, session):
-        self.session = session
+    def __init__(self):
+        self.session = {}
         
-    def check_token(self):
-        try:
-            user_id = self.session.get('user_id')
-            if user_id:
-                if isinstance(user_id, str):
-                    status, msg = database.run_db_operation(database.check_token_existence, token = user_id)
-                    return status, msg
-            return False, "problema na checagem do token"
-        except Exception as e:
-            logging.error(f"erro na função check_token, idenficiador do erro: {e}")
-            return False, "erro no sistema, por favor tente novamente mais tarde"
-
-    def validate_password(self, password):
+    @staticmethod
+    def validate_password(password):
         if password:
             if len(password) > 6:
                 return True, "o password é valido"
         return False, "o password não atende os requesitos"
 
-    def validate_username_creation(self, username):
+    @staticmethod
+    def validate_username_creation(username):
         try:
             if username:
                 if len(username) > 5:
