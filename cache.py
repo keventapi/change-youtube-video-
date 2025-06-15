@@ -2,7 +2,7 @@ import redis
 import logging
 from functools import wraps
 import traceback
-
+from datetime import timedelta, datetime
 def start_required(f):
     @wraps(f)
     def wrapped(*args, **kwargs):
@@ -13,7 +13,7 @@ def start_required(f):
     return wrapped
 
 class CacheHandler:
-    def __init__(self, limit, time_stamp, expire_limit=3600, event_expire_time=0.5, host="localhost", port=6379):
+    def __init__(self, limit, time_stamp, expire_limit=5, event_expire_time=0.5, host="localhost", port=6379):
         try:
             if self.check_redis_parameters(host, port) and self.check_initial_parameters(limit, time_stamp, expire_limit, event_expire_time):
                 self.r = None
@@ -21,7 +21,7 @@ class CacheHandler:
                 self.port = port
                 self.limit = limit
                 self.time_stamp = time_stamp
-                self.expire_limit = expire_limit
+                self.expire_limit = expire_limit*60
                 self.event_expire_time = event_expire_time
             else:
                 raise Exception(f'os parametros fornecidos são invalidos, o cache não pode ser executado')
@@ -46,15 +46,24 @@ class CacheHandler:
     @staticmethod
     def check_initial_parameters(limit, time_stamp, expire_limit, event_expire_time):
         if limit is not None and time_stamp is not None and expire_limit is not None and event_expire_time is not None:
-            if isinstance(limit, int) and isinstance(time_stamp, int) and isinstance(expire_limit, int) and isinstance(event_expire_time, float):
+            if isinstance(limit, int) and isinstance(time_stamp, int) and isinstance(expire_limit, int) and isinstance(event_expire_time, (int, float)):
                 if limit >= 0 and time_stamp >= 0 and expire_limit >= 0 and event_expire_time >= 0:
                     return True
         return False
     
+    @staticmethod
+    def validate_event_expire_time(event_expire_time):
+        return event_expire_time is not None and isinstance(event_expire_time, (int, float)) and event_expire_time > 0
+    
+    @staticmethod
+    def sanitize_event_expire_time(event_expire_time):
+        px = int(event_expire_time*1000)
+        return px 
+     
     @start_required
-    def set_login_rate_limit(self, sid):
+    def set_login_rate_limit(self, ip):
         try:
-            key = f"black_list:{sid}"
+            key = f"black_list:{ip}"
             if not self.r.exists(key):
                 self.r.set(key, 1)
                 self.r.expire(key, self.time_stamp)
@@ -69,9 +78,9 @@ class CacheHandler:
             logging.error(f'erro ao definir o login rate, identificador do erro: {e} \n{traceback.format_exc()}')
             
     @start_required
-    def is_black_listed(self, sid):
+    def is_black_listed(self, ip):
         try:
-            key = f"black_list:{sid}"
+            key = f"black_list:{ip}"
             attempts_byte = self.r.get(key)
             if attempts_byte is None:
                 return False
@@ -105,17 +114,21 @@ class CacheHandler:
             return None
 
     @start_required
-    def ws_event_throttle(self, sid, event_name):
+    def ws_event_throttle(self, sid, event_name, event_expire_time):
         try:
+            if not self.validate_event_expire_time(event_expire_time):
+                raise Exception(f'o valor de parametro fornecidos no event_expire_time é invalido, certifiquesse de passar um int ou um float')
+            
+            px = self.sanitize_event_expire_time(event_expire_time)
             key = f'{event_name}:{sid}'
             if not self.r.exists(key):
-                self.r.set(key, 1, ex=self.event_expire_time)
+                
+                self.r.set(key, 1, px=px)
                 return True
             return False
         except Exception as e:
             logging.error(f'erro ao aplicar o throttle do evento: {e} \n{traceback.format_exc()}')
             return False
-
 
     @start_required
     def ws_cache_logout(self, sid):

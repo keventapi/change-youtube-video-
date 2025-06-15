@@ -53,3 +53,4 @@ def test_invalide_type_int_login_websocket():
     client.emit('login_websocket', {'token': 1231254124})
     received = client.get_received()
     assert any(msg['name'] == 'error' for msg in received)
+    

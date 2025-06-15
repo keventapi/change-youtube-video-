@@ -1,9 +1,32 @@
 from flask import redirect, url_for, request, render_template, jsonify, session
 from functools import wraps
 import database
-import auth
+from utilites.auth import AuthValidation
+from cache import CacheHandler
 
 def start_route_handler(app):
+    cache = CacheHandler(5, 60)
+    cache.start()
+    
+    def blacklist_handler(f):
+        @wraps(f)
+        def wrapper(*args, **kwargs):
+            ip = request.remote_addr
+            cache.set_login_rate_limit(ip)
+            black_list_status = cache.is_black_listed(ip)
+            if not black_list_status: 
+                return f(*args, **kwargs)
+            else:
+                return jsonify({'status': False, 'msg': 'voce esta na blacklist para evitar bruteforce'}), 400
+        return wrapper
+    
+    def auth_handler_required(f):
+        @wraps(f)
+        def auth_handler(*args, **kwargs):
+            auth = AuthValidation()
+            return f(auth, *args, **kwargs)
+        return auth_handler 
+    
     def route_login_required(f):
         @wraps(f)
         def route_login_required_wrapper(*args, **kwargs):
@@ -44,11 +67,16 @@ def start_route_handler(app):
         
     @app.route('/login', methods=['POST'])
     @route_unloged_required
-    def login():
+    @blacklist_handler
+    @auth_handler_required
+    def login(auth):
         data = request.get_json()
         username = data.get('usuario')
         password = data.get('senha')
-        return login_handler(username, password)
+        response, status_code = auth.login_handler(username, password)
+        if auth.session.get('user_id'):
+            session['user_id'] = auth.session.get('user_id')
+        return jsonify(response), status_code
 
     @app.route('/signup')
     @route_unloged_required
@@ -57,11 +85,15 @@ def start_route_handler(app):
         
     @app.route('/register', methods=["POST"])
     @route_unloged_required
-    def register():
+    @auth_handler_required
+    def register(auth):
         data = request.get_json()
         username = data['usuario']
         password = data['senha']
-        return register_handler(username, password)
+        response, status_code = auth.register_handler(username, password)
+        if auth.session.get('user_id'):
+            session['user_id'] = auth.session.get('user_id')
+        return jsonify(response), status_code
 
     @app.route('/request_logout')
     @route_login_required
@@ -71,47 +103,3 @@ def start_route_handler(app):
 
 def render_perfil():
     return render_template('perfil.html')
-
-def credentials_handler(username, password):
-    password_status, password_msg = auth.validate_password(password)
-    username_status, username_msg = auth.validate_username_creation(username)
-    msg = ''
-    
-    if not password_status or not username_status:
-        if not password_status:
-            msg += password_msg + " and "
-        if not username_status:
-            msg += username_msg
-    else:
-        return True, "crecenciais validas"
-    return False, msg
-
-def login_handler(username, password):
-    if not isinstance(username, str) or not isinstance(password, str):
-        return jsonify({"status": False, "msg": "os campos tem que ser string", "token": False}), 400
-    username = username.lower()
-    status, data = database.run_db_operation(database.get_user, username=username, password=password)
-    if status:
-        token = data.get('token')
-        if token:
-            session['user_id'] = token
-            return jsonify({"status": True, "msg": "login efetuado", "token": data['token']}), 200
-    return jsonify({"status": False, "msg": "erro ao efetuar login, usuario ou senha invalidos", "token": False}), 400
-
-def register_handler(username, password):
-    if not isinstance(username, str) or not isinstance(password, str):
-        return jsonify({"status": False, "msg": "os campos tem que ser string", "token": False}), 400
-    username = username.lower()
-    credential_status, credential_msg = credentials_handler(username, password)
-    if credential_status == False:
-        return jsonify({"status": False, "msg": credential_msg}), 400
-        
-    status, msg = database.run_db_operation(database.add_user, username=username, password=password)
-    if status == True:
-        login_response = login_handler(username, password)
-        if login_response[1] == 200:
-            login_data = login_response[0].get_json()
-            return jsonify(login_data), 201
-        else:
-            return jsonify({"status": False, "msg": "erro ao efetuar login automatico, mas criação de usuario foi feita"}), 201
-    return jsonify({"status": False, "msg": "usuario ja existe"}), 400

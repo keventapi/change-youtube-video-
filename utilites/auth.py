@@ -56,19 +56,16 @@ class AuthValidation:
     def login_handler(self, username, password):
         try:
             username = username.lower()
-            valid, msg = self.check_credential_validation(username, password)
-            if not valid:
-                return jsonify({"status": False, "msg": msg, "token": False}), 400
             status, data = database.run_db_operation(database.get_user, username=username, password=password)
             if status:
                 token = data.get('token')
                 if token:
                     self.session['user_id'] = token
-                    return jsonify({"status": True, "msg": "login efetuado", "token": data['token']}), 200
-            return jsonify({"status": False, "msg": "erro ao efetuar login, usuario ou senha invalidos", "token": False}), 400
+                    return {"status": True, "msg": "login efetuado", "token": token}, 200
+            return {"status": False, "msg": "erro ao efetuar login, usuario ou senha invalidos", "token": False}, 400
         except Exception as e:
             logging.error(f'erro no login_handler, especificação do erro: {e}')
-            return jsonify({"status": False, "msg": "erro ao efetuar login, sistema com erro", "token": False}), 400
+            return {"status": False, "msg": "erro ao efetuar login, sistema com erro", "token": False}, 400
             
 
     def register_handler(self, username, password):
@@ -76,16 +73,16 @@ class AuthValidation:
             username = username.lower()
             valid, msg = self.check_credential_validation(username, password)
             if not valid:
-                return jsonify({"status": False, "msg": msg, "token": False}), 400
+                return {"status": False, "msg": msg, "token": False}, 400
             status, msg = database.run_db_operation(database.add_user, username=username, password=password)
             if status == True:
                 login_response = self.login_handler(username, password)
                 if login_response[1] == 200:
-                    login_data = login_response[0].get_json()
-                    return jsonify(login_data), 201
+                    login_data = login_response[0]
+                    return login_data, 201
                 else:
-                    return jsonify({"status": False, "msg": "erro ao efetuar login automatico, mas criação de usuario foi feita"}), 201
-            return jsonify({"status": False, "msg": "usuario ja existe"}), 400
+                    return {"status": False, "msg": "erro ao efetuar login automatico, mas criação de usuario foi feita"}, 201
+            return {"status": False, "msg": "usuario ja existe"}, 400
         except Exception as e:
             logging.error(f'erro no login_handler, especificação do erro: {e}')
-            return jsonify({"status": False, "msg": "erro ao efetuar login, sistema com erro", "token": False}), 400
+            return {"status": False, "msg": "erro ao efetuar login, sistema com erro", "token": False}, 400

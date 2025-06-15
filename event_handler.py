@@ -12,15 +12,19 @@ def start_event_handler(socketio):
     cache = CacheHandler(5, 60)
     cache.start()
     
-    def throttle_handler(event_name):
+    def throttle_handler(event_name, event_expire_time=0.5):
         def throttle(f):
             @wraps(f)
             def wrapper(*args, **kwargs):
-                sid = request.sid
-                if cache.ws_event_throttle(sid, event_name):
-                    return f(*args, **kwargs)
-                socketio.emit('error', {'status': False, 'msg': f"O evento '{event_name}' está sendo enviado com muita frequência. Aguarde alguns segundos."}, to=sid)
-                return None
+                try:
+                    sid = request.sid
+                    if cache.ws_event_throttle(sid, event_name, event_expire_time):
+                        return f(*args, **kwargs)
+                    socketio.emit('error', {'status': False, 'msg': f"O evento '{event_name}' está sendo enviado com muita frequência. Aguarde alguns segundos."}, to=sid)
+                    return None
+                except Exception as e:
+                    logging.error(f'erro ao iniciar o trhottle via cache, identificador do erro: {e} \n{traceback.format_exc()}')
+                    return None
             return wrapper
         return throttle
     
@@ -46,14 +50,14 @@ def start_event_handler(socketio):
     def black_list(f):
         @wraps(f)
         def wrapper(*args, **kwargs):
-            sid = request.sid
-            cache.set_login_rate_limit(sid)
-            black_list_status = cache.is_black_listed(sid)
+            ip = request.remote_addr
+            cache.set_login_rate_limit(ip)
+            black_list_status = cache.is_black_listed(ip)
             if not black_list_status: 
                 return f(*args, **kwargs)
             else:
-                socketio.emit('error', {"status": False,"msg": "Limite de tentativas atingido. Tente novamente mais tarde."}, to=sid)
-                return
+                socketio.emit('error', {"status": False,"msg": "Limite de tentativas atingido. Tente novamente mais tarde."}, to=request.sid)
+                return None
         return wrapper
     
     @socketio.on("connect")
@@ -114,7 +118,7 @@ def start_event_handler(socketio):
         socketio.emit("send_next", to=user_id)
 
     @socketio.on('pause')
-    @throttle_handler('pause')
+    @throttle_handler('pause', 0.1)
     @socket_login_required
     def handle_pause(user_id): #web_client ///// seria bom um debounce ou no minimo delay
         socketio.emit('emit_pause', to=user_id)
@@ -131,14 +135,14 @@ def start_event_handler(socketio):
             socketio.emit('error', {'status': False, "msg": "o video que voce tentou enviar esta em um formato invalido"}) #adicionar logging
             
     @socketio.on('new_volume')
-    @throttle_handler('new_volume')
+    @throttle_handler('new_volume', 0.1)
     @socket_login_required
     def new_volume(msg, user_id):    
         volume = msg.get('volume')
         volume_handler(volume, "change_volume", user_id)
                        
     @socketio.on('recive_volume')
-    @throttle_handler('recive_volume')
+    @throttle_handler('recive_volume', 0.1)
     @socket_login_required
     def recive_volume(msg, user_id):   
         volume = msg.get('volume')
@@ -146,7 +150,7 @@ def start_event_handler(socketio):
         
 
     @socketio.on('emit_volume_to_client')
-    @throttle_handler('emit_volume_to_client')
+    @throttle_handler('emit_volume_to_client', 0.1)
     @socket_login_required
     def emit_volume_to_client(user_id):
         socketio.emit('get_volume', to=user_id)
