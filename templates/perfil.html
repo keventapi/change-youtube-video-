@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Recomendações do YouTube</title>
+    <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+    <style>
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+    }
+
+    body {
+        background-color: black;
+        color: white;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        min-height: 100vh;
+        padding: 20px;
+    }
+
+    /* Container geral do form */
+    #form {
+        width: 100%;
+        max-width: 1000px;
+        background-color: rgba(255, 255, 255, 0.05);
+        padding: 20px 30px;
+        border-radius: 16px;
+        box-shadow: 0 0 15px rgba(255, 255, 255, 0.1);
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 15px;
+    }
+
+    /* Inputs texto e range */
+    #youtube_url {
+        flex: 1 1 60%;
+        padding: 12px 15px;
+        border: none;
+        border-radius: 12px;
+        font-size: 1.1rem;
+        outline-offset: 2px;
+        transition: outline-color 0.3s ease;
+        background-color: #222;
+        color: white;
+    }
+
+    #youtube_url:focus {
+        outline: 3px solid #4caf50;
+    }
+
+    /* Botões gerais */
+    input[type="submit"],
+    input[type="button"] {
+        flex: 1 1 18%;
+        padding: 12px 15px;
+        background-color: #333;
+        border: none;
+        border-radius: 12px;
+        color: white;
+        font-weight: 600;
+        cursor: pointer;
+        transition: background-color 0.3s ease;
+        user-select: none;
+    }
+
+    input[type="submit"]:active,
+    input[type="button"]:active {
+        background-color: #4caf50;
+    }
+
+    /* Range de volume */
+    #volume {
+        flex: 1 1 90%;
+        margin-top: 10px;
+        height: 8px;
+        border-radius: 6px;
+        background: linear-gradient(to right, #0d47a1 50%, #444 50%);
+        background-size: 100% 100%;
+        background-repeat: no-repeat;
+        cursor: pointer;
+        transition: background 0.3s ease;
+        -webkit-appearance: none;
+        appearance: none;
+    }
+
+    #volume:active {
+        background: linear-gradient(to right, #0d47a1 50%, #555 50%);
+    }
+
+    #volume::-webkit-slider-runnable-track {
+        height: 8px;
+        border-radius: 6px;
+        background: transparent;
+    }
+
+    #volume::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        appearance: none;
+        width: 18px;
+        height: 18px;
+        background: #0d47a1; /* azul escuro */
+        border-radius: 50%;
+        cursor: pointer;
+        margin-top: -5px;
+        transition: background 0.3s ease;
+    }
+
+    #volume::-moz-range-track {
+        height: 8px;
+        border-radius: 6px;
+        background: transparent;
+    }
+
+    #volume::-moz-range-thumb {
+        width: 18px;
+        height: 18px;
+        background: #0d47a1; /* azul escuro */
+        border-radius: 50%;
+        cursor: pointer;
+        transition: background 0.3s ease;
+    }
+
+    /* Container de recomendações */
+    #recomendacoes {
+        width: 100%;
+        max-width: 1000px;
+        margin-top: 30px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 25px;
+    }
+
+    #recomendacoes h3 {
+        font-weight: 700;
+        font-size: 1.5rem;
+        margin-bottom: 15px;
+        text-align: center;
+        letter-spacing: 1px;
+    }
+
+    /* Log (p) */
+    #log {
+        color: #bbb;
+        font-size: 0.9rem;
+        margin-bottom: 10px;
+        text-align: center;
+        max-width: 800px;
+        word-break: break-word;
+    }
+
+    /* Cada card/container da recomendação */
+    .container {
+        background-color: rgba(255, 255, 255, 0.1);
+        border: 1px solid rgba(255, 255, 255, 0.25);
+        padding: 15px;
+        border-radius: 16px;
+        width: 90%;
+        max-width: 400px;
+        text-align: center;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        transition: background-color 0.3s ease, border-color 0.3s ease;
+    }
+
+    .container:active {
+        background-color: rgba(76, 175, 80, 0.15);
+        border-color: #4caf50;
+    }
+
+    /* Imagem do vídeo */
+    .container img {
+        width: 100%;
+        border-radius: 12px;
+        object-fit: cover;
+        max-height: 220px;
+    }
+
+    /* Botão dentro do container */
+    .container input[type="button"] {
+        width: 100%;
+        background-color: #222;
+        border-radius: 10px;
+        padding: 12px;
+        font-weight: 600;
+        font-size: 1rem;
+        transition: background-color 0.3s ease;
+    }
+
+    .container input[type="button"]:active{
+            background-color: rgb(76, 175, 79);
+        }
+
+    /* Responsividade simples */
+    @media (max-width: 650px) {
+        #form {
+            flex-direction: column;
+        }
+
+        #youtube_url,
+        input[type="submit"],
+        input[type="button"],
+        #volume {
+            flex: 1 1 100%;
+        }
+    }
+</style>
+
+</head>
+<body>
+    <form method="POST" id="form">
+        <input type="button" value="logout" id="logout">
+        <input type="text" name="url" id="youtube_url" placeholder="Cole a URL do vídeo aqui">
+        <input type="submit" value="Enviar">
+        <input type="button" value="next" id="next">
+        <input type="button" value="❚❚/▶" id="pause">
+        <input type="range"  min="0" max="100" id="volume" step="1">
+        <div id="recomendacoes">
+          <p id="log"></p>
+                <h3>Recomendações:</h3>
+        </div>
+    </form>
+
+<script>
+
+
+    const volumeSlider = document.getElementById("volume");
+
+    function updateVolumeFill() {
+        const value = volumeSlider.value;
+        const min = volumeSlider.min ? volumeSlider.min : 0;
+        const max = volumeSlider.max ? volumeSlider.max : 100;
+        const percentage = ((value - min) / (max - min)) * 100;
+        volumeSlider.style.background = `linear-gradient(to right, #0d47a1 ${percentage}%, #444 ${percentage}%)`;
+    }
+
+    volumeSlider.addEventListener("input", updateVolumeFill);
+    window.addEventListener("DOMContentLoaded", updateVolumeFill);
+
+        var conteudo = {}
+
+        function remove_old_recommendations(response){
+            if(JSON.stringify(conteudo) != JSON.stringify(response.recommendations)){
+                let div = document.getElementById('recomendacoes')
+                while(div.firstChild){
+                  div.removeChild(div.firstChild)
+              }
+            }
+        }
+        
+        function add_recommendations(response){
+          remove_old_recommendations(response)
+          if(JSON.stringify(response.recommendations) != JSON.stringify({}) && JSON.stringify(conteudo) != JSON.stringify(response.recommendations)){
+                    conteudo = response.recommendations
+                    for(let key in conteudo){
+                        let container = document.createElement('div')
+                        container.className = 'container'
+                        let img = document.createElement('img')
+                        img.src = conteudo[key]['thumb']
+                        let button = document.createElement('input')
+                        button.value = key
+                        button.type = 'button'
+                        button.addEventListener('click', () =>{
+                            let video_url = conteudo[key]['url']
+                            let input = document.getElementById('youtube_url')
+                            window.scrollTo({
+                                top: 0,
+                                left: 0,
+                                behavior: 'smooth'
+                            });
+                            socket.emit('get_video_from_client', {url: video_url})
+                        })
+                        div = document.getElementById('recomendacoes')
+                        container.appendChild(img)
+                        container.appendChild(button)
+                        div.append(container)
+                    }          
+                }
+        }
+
+        function start(){
+            socket.emit('get_recommendations')
+            socket.emit('emit_volume_to_client')
+        }
+
+
+        function throttle(func, limit) {
+            let lastCall = 0;
+            return function (...args) {
+                const now = Date.now();
+                if (now - lastCall >= limit) {
+                lastCall = now;
+                func.apply(this, args);
+                }
+            };
+        }
+
+        document.getElementById("form").addEventListener("submit", function(event) {
+            event.preventDefault();
+        });
+
+        function remove_old_recommendations(response){
+            if(JSON.stringify(conteudo) != JSON.stringify(response.recommendations)){
+                let div = document.getElementById('recomendacoes')
+                while(div.firstChild){
+                  div.removeChild(div.firstChild)
+              }
+            }
+        }
+        
+        function add_recommendations(response){
+          console.log(response)
+          remove_old_recommendations(response)
+          if(JSON.stringify(response.recommendations) != JSON.stringify({}) && JSON.stringify(conteudo) != JSON.stringify(response.recommendations)){
+                    conteudo = response.recommendations
+                    for(let key in conteudo){
+                        let container = document.createElement('div')
+                        container.className = 'container'
+                        let img = document.createElement('img')
+                        img.src = conteudo[key]['thumb']
+                        let button = document.createElement('input')
+                        button.value = key
+                        button.type = 'button'
+                        button.addEventListener('click', () =>{
+                            let video_url = conteudo[key]['url']
+                            let input = document.getElementById('youtube_url')
+                            window.scrollTo(0, 0)
+                            socket.emit('get_video_from_client', {url: video_url})
+                        })
+                        div = document.getElementById('recomendacoes')
+                        container.appendChild(img)
+                        container.appendChild(button)
+                        div.append(container)
+                    }          
+                }
+        }
+
+        function handle_logout(){
+            fetch(`http://${ip}:5000/request_logout`).then(res => res.json).then((data) => {
+                window.location.reload()
+                localStorage.removeItem('token')
+            })
+        }
+
+        function emit_volume(){
+            const volume_element = document.getElementById('volume')
+            socket.emit('new_volume', {volume: volume_element.value})
+        }
+        
+        function sync_volume(data){
+            const volume = document.getElementById('volume')
+            volume.value = data['volume']
+        }
+
+        function set_volume(data){
+            const volume = document.getElementById('volume')
+            volume.value = data['volume']
+        }
+
+        const ip = '192.168.5.102'
+        const socket = io(`http://${ip}:5000`)
+
+        socket.on('connect', ()=> {
+            const session_token = localStorage.getItem('token')
+            if(session_token){
+                socket.emit('login_websocket', {token: session_token})
+            }else{
+                handle_logout()
+            }
+            start()
+        })
+
+        socket.on('new_recommendations', (data) => {
+            console.log(data)
+            add_recommendations(data)
+        })
+
+        socket.on('sync_volume', (data) => {
+            sync_volume(data);
+        })
+
+        const next = document.getElementById('next')
+        next.addEventListener('click', () => {
+            socket.emit('next')
+        })
+
+        const pause = document.getElementById('pause')
+        pause.addEventListener('click', () => {
+            socket.emit('pause')
+        })
+
+        const volume = document.getElementById('volume')
+        volume.addEventListener('input', throttle((event) => {
+            emit_volume()
+        }, 100))
+        
+        let logout = document.getElementById('logout')
+        logout.addEventListener('click', () => {
+            handle_logout()
+        })
+    </script>
+</body>
+</html>

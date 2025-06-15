@@ -1,48 +1,80 @@
-# 🎛️ Change YouTube Video Controller
+# Projeto: Controle Remoto para YouTube via Extensão + Flask
 
-**Controle vídeos do YouTube em tempo real com seu celular** — com suporte a playlists personalizadas e integração direta com o YouTube para donos de bares, cafeterias, igrejas, educadores e apresentadores ao vivo.
+## Tecnologias e linguagens usadas
 
----
+- **Node.js**
+- **Python 3.x**
 
-## 🚀 Público-Alvo
-Esta ferramenta foi pensada para:
+### Bibliotecas principais
 
-- 🎙️ **Apresentações ao vivo** (professores, DJs, mestres de cerimônia, igrejas)
-- 🍻 **Donos de bares e cafeterias** que usam o computador para transmitir vídeos, músicas ou eventos como jogos de futebol e apresentações ao vivo
-
-Estes usuários frequentemente precisam **trocar de vídeo sem acessar o PC diretamente**, ou querem **organizar suas mídias em playlists personalizadas ou ate mesmo agendalas como programação especifica**.
+- `flask`
+- `flask-socketio`
 
 ---
 
-## 🧩 Funcionalidades Planejadas
+## Como instalar as dependências
 
-### ✅ Controle remoto
-- Troque de vídeo usando seu celular sem tocar no mouse ou teclado
-- Ajuste volume, pause ou avance vídeo com comandos simples
+### Backend (Python):
 
-### ✅ Playlists personalizadas com pastas
-- Crie quantas playlists quiser (ilimitado no plano premium)
-- Organize as playlists em **pastas temáticas** como “Música ambiente”, “Jogos ao vivo”, “Vídeos de louvor” etc.
+1. Crie um ambiente virtual (opcional, mas recomendado):
+   ```bash
+   python -m venv venv
+   source venv/bin/activate  # Linux/Mac
+   venv\Scripts\activate     # Windows
+   ```
 
-### ✅ Botão direto no YouTube: “Adicionar à playlist”
-- Botão injetado automaticamente no YouTube, ao lado de "Curtir" ou "Compartilhar"
-- Ao clicar, um **pop-up personalizado** permitirá:
-  - Escolher a **playlist** e **pasta** para adicionar o vídeo
-  - Definir a **posição do vídeo** na playlist
-  - Criar nova playlist diretamente pelo pop-up
+2. Instale as dependências com pip:
+   ```bash
+   pip install flask flask-socketio eventlet
+   ```
 
-### ✅ Sincronização total com extensão e app
-- Você poderá adicionar vídeos via app ou diretamente na interface do YouTube
+### Frontend (Extensão):
 
-### ✅ Plano Freemium
-- **Gratuito:** 3 playlists + 1 pasta + controle remoto básico
-- **Premium:** Playlists ilimitadas, pastas ilimitadas
+1. Instale as dependências do Node.js:
+   ```bash
+   npm install
+   ```
+
+2. Para empacotar o código da extensão, sempre rode:
+   ```bash
+   npm run build
+   ```
 
 ---
 
-## 💡 Ideias Futuras
+## Como rodar
 
-- 📅 **Agendamento de playlists** (para mudar automaticamente a programação do bar ou evento)
-- 🧠 **Sugestão automática de pasta** com base no vídeo
-- 🔒 **Login com autenticação simples e persistente**
+### Backend:
+
+Basta executar:
+```bash
+python server.py
+```
+
+### Extensão do Chrome:
+
+1. Ative o **modo desenvolvedor** no Chrome.
+2. Clique em **"Carregar sem compactação"** e selecione a pasta `dist` (lembre de rodar `npm run build` antes!).
+3. **IMPORTANTE:** Altere as constantes `ip` pelo seu **IPv4 local**. Elas estão localizadas em:
+   - `template/home.html`
+   - `src/background.js`
+
+> A extensão ainda está funcionando em **modo local**.
+
 ---
+
+## Funcionalidades
+
+- O botão **"Next"** simula `Shift + N`, pulando para o próximo vídeo que o YouTube já preparou.
+- O botão com o símbolo de **pausar/despausar** funciona como esperado.
+- A **barra de volume** ajusta o som do vídeo, mas está com um pequeno bug: o YouTube tenta restaurar o volume anterior, o que pode causar uma leve oscilação.
+- Os **botões de recomendações** levam diretamente aos vídeos recomendados pelo YouTube. Antigamente apresentavam bugs, mas atualmente estão estáveis. Caso encontre algum problema, documente e envie feedback.
+- A funcionalidade de **colar URL** era um protótipo e não está funcionando. O botão "enviar" também fazia parte dela.
+
+---
+
+## Observações
+
+- A extensão **interage apenas com o YouTube**. Ela **não modifica ou interfere em outros sites**.
+
+

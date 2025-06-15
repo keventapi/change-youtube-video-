@@ -1,7 +1,5 @@
 import { io } from "socket.io-client"
 
-// TODO: Refatorar usando padrão when_on_youtube(callback) para evitar repetição e isolar lógica de verificação de URL do YouTube
-
 let MAX_ATTEMPTS = {};
 
 function attempt_emit_recommendations(tabId, scroll=false){
@@ -26,7 +24,10 @@ function attempt_emit_recommendations(tabId, scroll=false){
               MAX_ATTEMPTS[tabId] = 0;
             }
          }else{
-          socket.emit('post_recommendations', {recommendations: res.recommendations})
+          chrome.storage.local.get('token', (data) => {
+            socket.emit('post_recommendations', {recommendations: res.recommendations, token: data.token})
+          })
+          
         }
       }
     }
@@ -59,8 +60,6 @@ function next_video(){
       chrome.tabs.sendMessage(tab.id, {action: "next"}, (res) => {
         if(chrome.runtime.lastError){
           console.log('erro ao ir para proximo video indentificador do erro -->', chrome.runtime.lastError)
-        }else{
-          socket.emit('reset')
         }
       })
     }
@@ -75,8 +74,6 @@ function pause_video(){
       chrome.tabs.sendMessage(tab.id, {action: "pause"}, (res) => {
         if(chrome.runtime.lastError){
           console.log('erro ao pausar o video indentificador do erro -->', chrome.runtime.lastError)
-        }else{
-          socket.emit('reset')
         }
       })
     }
@@ -92,7 +89,10 @@ function get_volume(){
           console.log('erro ao pegar o volume indentificador do erro -->', chrome.runtime.lastError)
         }else{
           if(res.volume){
-            socket.emit('recive_volume', {volume: res.volume})
+            chrome.storage.local.get('token', (data) => {
+              console.log('pego o volume', res.volume, data.token)
+              socket.emit('recive_volume', {volume: res.volume, token: data.token})
+            })
             chrome.storage.local.set({volume: res.volume})
           }else{
             console.log('o volume retornou undefined, o scrapping esta com problema')
@@ -121,9 +121,22 @@ function change_volume(new_volume){
 const ip = "192.168.5.102"
 const socket = io(`http://${ip}:5000`, { transports: ["websocket"] });
 
+let is_logged = false
+
 socket.on('connect', () => {
   console.log('Conectado ao WebSocket');
+  chrome.storage.local.get('token', (data) => {
+  if(data.token){
+    socket.emit("login_websocket", {token: data.token})
+    is_logged = true
+  }
+  })
 });
+
+socket.on('disconnect', () => {
+  is_logged = false
+})
+
 
 socket.on('connect_error', (err) => {
   console.error('Erro de conexão:', err);
@@ -141,8 +154,7 @@ socket.on('change_video', (data) => {
   change_video(data.url);
 })
 
-socket.on('send_next', (data) => {
-  console.log(data)
+socket.on('send_next', () => {
   next_video();
 })
 
@@ -160,5 +172,15 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if(message.action == "update_volume"){
     chrome.storage.local.set({volume: message.new_volume})
     sendResponse({status: "volume atualizado com sucesso"})
+  }
+  if(message.action == "login"){
+    chrome.storage.local.get('token', (data) => {
+      if(data.token){
+        socket.emit("login_websocket", {token: data.token})
+        console.log(data.token)
+      }
+    })
+    sendResponse({status: "login enviado com sucesso"})
+    return true
   }
 })

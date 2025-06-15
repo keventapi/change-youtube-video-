@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Recomendações do YouTube - sign up</title>
+    <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background-color: black;
+            color: white;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            padding: 20px;
+        }
+
+        #login-form {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 30px 40px;
+            border-radius: 16px;
+            box-shadow: 0 0 15px rgba(255, 255, 255, 0.1);
+            width: 100%;
+            max-width: 400px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        input[type="text"],
+        input[type="password"] {
+            padding: 12px 15px;
+            font-size: 1.1rem;
+            border-radius: 12px;
+            border: none;
+            background-color: #222;
+            color: white;
+            outline-offset: 2px;
+            transition: outline-color 0.3s ease;
+        }
+
+        input[type="text"]:focus,
+        input[type="password"]:focus {
+            outline: 3px solid #4caf50;
+        }
+
+        input[type="button"] {
+            padding: 12px 15px;
+            background-color: #333;
+            border: none;
+            border-radius: 12px;
+            color: white;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+            user-select: none;
+        }
+
+        #msg {
+            color: #f44336; /* vermelho para erros */
+            font-weight: 600;
+            text-align: center;
+            min-height: 1.2em;
+            user-select: none;
+        }
+
+        /* Responsividade simples */
+        @media (max-width: 450px) {
+            #login-form {
+                padding: 20px;
+            }
+            input[type="text"],
+            input[type="password"],
+            input[type="button"] {
+                font-size: 1rem;
+                padding: 10px 12px;
+            }
+        }
+        #back {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            padding: 10px 16px;
+            font-size: 1.2rem;
+            background-color: #222;
+            border: none;
+            border-radius: 8px;
+            color: white;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        input[type="button"]:active{
+            background-color: rgb(76, 175, 79);
+        }
+    </style>
+</head>
+<body>
+    
+    <input type="button" id="back" value="&lt;" title="Voltar" />
+    <div id="login-form">
+        <input type="text" id="username" placeholder="Usuário" autocomplete="username" />
+        <input type="password" id="password" placeholder="Senha" autocomplete="current-password" />
+        
+        <input type="button" value="Cadastrar" id="register" />
+        
+        <span id="msg"></span>
+    </div>
+    <script>
+        const back = document.getElementById('back');
+        const registerButton = document.getElementById('register');
+        const msg = document.getElementById('msg');
+
+        // Função para voltar para a página anterior (login)
+        back.addEventListener('click', () => {
+            window.location.href = "../";  // Ajuste o caminho conforme necessário
+        });
+
+        // Mostrar mensagem de erro ou limpar
+        function showMessage(error, msg) {
+            if (error) {
+                msg.textContent = msg;
+            } else {
+                msg.textContent = "";
+            }
+        }
+
+        // Evento do botão cadastrar
+        registerButton.addEventListener('click', () => {
+            const username = document.getElementById('username').value.trim();
+            const password = document.getElementById('password').value.trim();
+
+            // Validação simples
+            if (!username || !password) {
+                showMessage(true);
+                msg.textContent = "Por favor, preencha usuário e senha.";
+                return;
+            }
+
+            fetch('http://192.168.5.102:5000/register', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                credentials: 'include',
+                body: JSON.stringify({
+                    usuario: username,
+                    senha: password
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log(data.msg)
+                if (data.status === false) {
+                    showMessage(true, data.msg);
+                } else {
+                    showMessage(false, data.msg);
+                    localStorage.setItem('token', data.token);
+                    window.location.href = "../";
+                }
+            })
+            .catch(err => {
+                showMessage(true);
+                console.error("Erro no fetch:", err);
+            });
+        });
+    </script>
+</body>
+</html>
