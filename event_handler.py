@@ -12,13 +12,14 @@ def start_event_handler(socketio):
     cache = CacheHandler(5, 60)
     cache.start()
     
-    def throttle_handler(event_name, event_expire_time=0.5):
-        def throttle(f):
+    def throttle_handler_required(event_name, event_expire_time=0.5):
+        def throttle_handler(f):
             @wraps(f)
             def wrapper(*args, **kwargs):
                 try:
                     sid = request.sid
-                    if cache.ws_event_throttle(sid, event_name, event_expire_time):
+                    status = cache.ws_event_throttle(sid, event_name, event_expire_time)
+                    if status:
                         return f(*args, **kwargs)
                     socketio.emit('error', {'status': False, 'msg': f"O evento '{event_name}' está sendo enviado com muita frequência. Aguarde alguns segundos."}, to=sid)
                     return None
@@ -26,7 +27,7 @@ def start_event_handler(socketio):
                     logging.error(f'erro ao iniciar o trhottle via cache, identificador do erro: {e} \n{traceback.format_exc()}')
                     return None
             return wrapper
-        return throttle
+        return throttle_handler
     
     
     def socket_login_required(f):
@@ -88,9 +89,9 @@ def start_event_handler(socketio):
             return socketio.emit('error', {'status': False, "msg": "voce esta com um token invalido ou sessão expirada, relogue para criar uma nova sessão"}, to=request.sid)
 
     @socketio.on('post_recommendations')
-    @throttle_handler('post_recommendations')
+    @throttle_handler_required('post_recommendations')
     @socket_login_required
-    def post_recommendations(msg, user_id): # seria bom um debounce ou no minimo delay
+    def post_recommendations(msg, user_id):
         ytrecommendations_array = msg.get('recommendations')
         if ytrecommendations_array is None:
             return socketio.emit('error', {'status': False, "msg": "a lista de recomendações feita pela extensão veio com valor None sendo o esperado lista"}, to=user_id)
@@ -100,7 +101,7 @@ def start_event_handler(socketio):
             socketio.emit('new_recommendations', {"recommendations": ytrecommendations}, to=user_id)
            
     @socketio.on('get_recommendations')
-    @throttle_handler('get_recommendations')
+    @throttle_handler_required('get_recommendations')
     @socket_login_required
     def get_recommendations(user_id): # seria bom um debounce ou no minimo delay
         status, data = database.run_db_operation(database.get_user_from_token, token=user_id)
@@ -112,19 +113,19 @@ def start_event_handler(socketio):
             socketio.emit('error', {'status': False, "msg": "erro ao pegar recomendações, token esta invalido ou não tem nenhuma recomendação"}, to=user_id)
 
     @socketio.on('next')
-    @throttle_handler('next')
+    @throttle_handler_required('next')
     @socket_login_required
     def handle_next(user_id): #web_client //// seria bom um debounce ou no minimo delay
         socketio.emit("send_next", to=user_id)
 
     @socketio.on('pause')
-    @throttle_handler('pause', 0.1)
+    @throttle_handler_required('pause', 0.1)
     @socket_login_required
     def handle_pause(user_id): #web_client ///// seria bom um debounce ou no minimo delay
         socketio.emit('emit_pause', to=user_id)
 
     @socketio.on('get_video_from_client')
-    @throttle_handler('get_video_from_client')
+    @throttle_handler_required('get_video_from_client')
     @socket_login_required
     def get_video(message, user_id):
         try:
@@ -135,14 +136,14 @@ def start_event_handler(socketio):
             socketio.emit('error', {'status': False, "msg": "o video que voce tentou enviar esta em um formato invalido"}) #adicionar logging
             
     @socketio.on('new_volume')
-    @throttle_handler('new_volume', 0.1)
+    @throttle_handler_required('new_volume', 0.1)
     @socket_login_required
     def new_volume(msg, user_id):    
         volume = msg.get('volume')
         volume_handler(volume, "change_volume", user_id)
                        
     @socketio.on('recive_volume')
-    @throttle_handler('recive_volume', 0.1)
+    @throttle_handler_required('recive_volume', 0.1)
     @socket_login_required
     def recive_volume(msg, user_id):   
         volume = msg.get('volume')
@@ -150,19 +151,22 @@ def start_event_handler(socketio):
         
 
     @socketio.on('emit_volume_to_client')
-    @throttle_handler('emit_volume_to_client', 0.1)
+    @throttle_handler_required('emit_volume_to_client', 0.1)
     @socket_login_required
     def emit_volume_to_client(user_id):
         socketio.emit('get_volume', to=user_id)
 
     def validate_volume(volume):
-        if volume is None:
+        try:
+            if volume is None:
+                return False
+            int_volume = int(volume)
+            if isinstance(int_volume, int):
+                return 0 <= int_volume <= 100
             return False
-        
-        if isinstance(volume, int):
-            return 0 <= volume <= 100
-        
-        return False
+        except Exception as e:
+            print('erro ao validar o volume')
+            return False
         
 
     def volume_handler(volume, socket_event, user_id):
